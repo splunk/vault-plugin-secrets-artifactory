@@ -152,7 +152,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 
 		_, err := c.V1.Security.CreateOrReplaceGroup(ctx, n, &group)
 		if err != nil {
-			return logical.ErrorResponse("Failed to create/update a group" + err.Error()), err
+			return logical.ErrorResponse("Failed to create/update a group - " + err.Error()), err
 		}
 
 	}
@@ -182,28 +182,28 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		existingPts := role.PermissionTargets
 		role.PermissionTargets = newPts
 
-		// for _, pt := range newPts {
-		// ptName := permissionTargetName(role, *pt.Name)
-		// modifiedPt := replaceGroupName(&pt, groupName(role.RoleID))
-		// modifiedPt.Name = permissionTargetName(role, *ptName)
+		for _, pt := range newPts {
+			ptName := permissionTargetName(role, *pt.Name)
+			replaceGroupName(&pt, groupName(role.RoleID))
+			pt.Name = ptName
 
-		// exist, err := c.V2.Security.HasPermissionTarget(ctx, *ptName)
-		// if err != nil {
-		// 	return logical.ErrorResponse("failed to obtain permission target - " + err.Error()), err
-		// }
+			exist, err := c.V2.Security.HasPermissionTarget(ctx, *ptName)
+			if err != nil {
+				return logical.ErrorResponse("failed to obtain permission target - " + err.Error()), err
+			}
 
-		// if !exist {
-		// 	_, err := c.V2.Security.CreatePermissionTarget(ctx, *ptName, modifiedPt)
-		// 	if err != nil {
-		// 		return logical.ErrorResponse("failed to create permission target - " + err.Error()), err
-		// 	}
-		// } else {
-		// 	_, err := c.V2.Security.UpdatePermissionTarget(ctx, *ptName, modifiedPt)
-		// 	if err != nil {
-		// 		return logical.ErrorResponse("failed to update permission target - " + err.Error()), err
-		// 	}
-		// }
-		// }
+			if !exist {
+				_, err := c.V2.Security.CreatePermissionTarget(ctx, *ptName, &pt)
+				if err != nil {
+					return logical.ErrorResponse("failed to create permission target - " + err.Error()), err
+				}
+			} else {
+				_, err := c.V2.Security.UpdatePermissionTarget(ctx, *ptName, &pt)
+				if err != nil {
+					return logical.ErrorResponse("failed to update permission target - " + err.Error()), err
+				}
+			}
+		}
 
 		// delete removed permission targets
 		// naive solution

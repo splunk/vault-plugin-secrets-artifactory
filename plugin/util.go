@@ -2,6 +2,8 @@ package artifactorysecrets
 
 import (
 	"fmt"
+
+	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
 )
 
 const (
@@ -20,28 +22,24 @@ func permissionTargetName(roleEntry *RoleStorageEntry, name string) *string {
 
 // replaceGroupName swaps pluginOwnRole with supplied group name
 // this is crashing
-// func replaceGroupName(pt *v2.PermissionTarget, groupName string) *v2.PermissionTarget {
-// 	modifiedPt := pt
+func replaceGroupName(pt *v2.PermissionTarget, groupName string) {
+	if pt.Repo != nil && pt.Repo.Actions != nil && pt.Repo.Actions.Groups != nil {
+		for name, Ops := range *pt.Repo.Actions.Groups {
+			if name == pluginOwnRole {
+				delete(*pt.Repo.Actions.Groups, name)
+				(*pt.Repo.Actions.Groups)[groupName] = Ops
+				break
+			}
+		}
+	}
 
-// 	repoGroups := *pt.Repo.Actions.Groups
-// 	for groupName, Ops := range repoGroups {
-// 		if groupName == pluginOwnRole {
-// 			delete(*pt.Repo.Actions.Groups, groupName)
-// 			repoGroups[groupName] = Ops
-// 		}
-// 	}
+	if pt.Build != nil && pt.Build.Actions != nil && pt.Build.Actions.Groups != nil {
+		for name, Ops := range *pt.Build.Actions.Groups {
+			if name == pluginOwnRole {
+				delete(*pt.Repo.Actions.Groups, name)
+				(*pt.Build.Actions.Groups)[groupName] = Ops
+			}
+		}
+	}
 
-// 	modifiedPt.Repo.Actions.Groups = &repoGroups
-
-// 	buildGroups := *pt.Build.Actions.Groups
-// 	for groupName, Ops := range buildGroups {
-// 		if groupName == pluginOwnRole {
-// 			delete(*pt.Repo.Actions.Groups, groupName)
-// 			buildGroups[groupName] = Ops
-// 		}
-// 	}
-
-// 	modifiedPt.Build.Actions.Groups = &buildGroups
-
-// 	return modifiedPt
-// }
+}

@@ -39,7 +39,6 @@ func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, sto
 
 	client, err = artifactory.NewClient(config.BaseURL, c)
 	if err != nil {
-		fmt.Printf("\nerror: %v\n", err)
 		return client, err
 	}
 
