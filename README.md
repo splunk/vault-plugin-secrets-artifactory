@@ -26,18 +26,18 @@ To learn specifically about how plugins work, see documentation on [Vault plugin
 ```sh
 # Please mount a plugin, then you can enable a secret
 $ vault secrets enable -path=artifactory vault-artifactory-secrets-plugin
-Success! Enabled the vault-artifactory-secrets-plugin secrets engine at: artifactory-cloud/
+Success! Enabled the vault-artifactory-secrets-plugin secrets engine at: artifactory/
 
 # configure the /config backend. You must supply admin bearer token or username/password pair of an admin user.
 $ vault write artifactory/config base_url="https://artifactory.example.com/artifactory" bearer_token=$BEARER_TOKEN ttl=600 max_ttl=600
 
-# Sample permission targets file can be found [here](./scripts/sample_permission_targets.json)
-$ cat permission_targets.json | vault write artifactory/roles/ci-role token_ttl=600 permission_targets=-
+# creating a role
+$ vault write artifactory/roles/ci-role token_ttl=600 permission_targets=@scripts/sample_permission_targets.json
 
-$ vault write artifactory-cloud/token/ci-role ttl=60
+$ vault write artifactory/token/ci-role ttl=60
 Key             Value
 ---             -----
-access_token    REDUCTED_BEAERER_TOKEN
+access_token    REDACTED
 username        auto-vault-plugin-user.ci-role
 ```
 
