@@ -60,7 +60,7 @@ username follows the format of `auto-vault-plugin-user.<role_name>`
 
 ### Update Permission Targets
 
-List of permission targets can be supplied as JSON string. Format of permission target can be found [here](https://www.jfrog.com/confluence/display/JFROG/Security+Configuration+JSON#SecurityConfigurationJSON-application/vnd.org.jfrog.artifactory.security.PermissionTargetV2+json)
+List of permission targets can be supplied as JSON string. Format of a permission target can be found [here](https://www.jfrog.com/confluence/display/JFROG/Security+Configuration+JSON#SecurityConfigurationJSON-application/vnd.org.jfrog.artifactory.security.PermissionTargetV2+json)
 
 To apply a dynamically created group to permission targets, you must use `VAULT_PLUGIN_OWN_ROLE` as group name permission target group key. for example,
 
@@ -115,3 +115,13 @@ $ ./scripts/setup_dev_vault.sh
 
 # You can then create a role and issue a token following above usage. 
 ```
+
+## Roadmap
+
+This plugin is being initially developed for an internal application at Splunk for suite of ephemeral credentials
+
+## Reporting Issues
+
+## Contributors
+
+Merge requests, issues and comments are always welcomed

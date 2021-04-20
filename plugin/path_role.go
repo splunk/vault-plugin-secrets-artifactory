@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/atlassian/go-artifactory/v2/artifactory/v1"
 	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
 	"github.com/google/uuid"
 	"github.com/hashicorp/vault/sdk/framework"
@@ -55,25 +54,17 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 	// remove the role
 	// TODO: garbage collect artifactory group and associated permission targets
 	// since permission targets are only created for this specific group, we must delete them when a group is deleted
-	c, err := backend.getArtifactoryClient(ctx, req.Storage)
+	ac, err := backend.getArtifactoryClient(ctx, req.Storage)
 	if err != nil {
 		return logical.ErrorResponse("failed to obtain artifactory client"), err
 	}
-	_, _, err = c.V1.Security.DeleteGroup(ctx, groupName(role.RoleID))
-	if err != nil {
+	if _, _, err = ac.deleteGroup(role); err != nil {
 		return nil, err
 	}
 
 	for _, pt := range role.PermissionTargets {
-		exist, err := c.V2.Security.HasPermissionTarget(ctx, *permissionTargetName(role, *pt.Name))
-		if err != nil {
-			return logical.ErrorResponse("failed to obtain permission target"), err
-		}
-		if exist {
-			_, err := c.V2.Security.DeletePermissionTarget(ctx, *permissionTargetName(role, *pt.Name))
-			if err != nil {
-				return logical.ErrorResponse("failed to delete permission target"), err
-			}
+		if _, err := ac.deletePermissionTarget(role, &pt); err != nil {
+			return logical.ErrorResponse("failed to delete a permission target: ", *pt.Name), err
 		}
 	}
 
@@ -127,7 +118,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		return logical.ErrorResponse("Error reading role"), err
 	}
 
-	c, err := backend.getArtifactoryClient(ctx, req.Storage)
+	ac, err := backend.getArtifactoryClient(ctx, req.Storage)
 	if err != nil {
 		return logical.ErrorResponse("failed to obtain artifactory client"), err
 	}
@@ -143,16 +134,8 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 
 		// TODO: create artifactory group
 		// group name: vault-plugin.<role_id>
-		n := groupName(roleID.String())
-		desc := fmt.Sprintf("vault plugin group for %s", roleName)
-		group := v1.Group{
-			Name:        &n,
-			Description: &desc,
-		}
-
-		_, err := c.V1.Security.CreateOrReplaceGroup(ctx, n, &group)
-		if err != nil {
-			return logical.ErrorResponse("Failed to create/update a group - " + err.Error()), err
+		if _, err := ac.createOrReplaceGroup(role); err != nil {
+			return logical.ErrorResponse("failed to create/update an artifactory group - ", err.Error()), err
 		}
 
 	}
@@ -187,43 +170,22 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 			replaceGroupName(&pt, groupName(role.RoleID))
 			pt.Name = ptName
 
-			exist, err := c.V2.Security.HasPermissionTarget(ctx, *ptName)
-			if err != nil {
-				return logical.ErrorResponse("failed to obtain permission target - " + err.Error()), err
-			}
-
-			if !exist {
-				_, err := c.V2.Security.CreatePermissionTarget(ctx, *ptName, &pt)
-				if err != nil {
-					return logical.ErrorResponse("failed to create permission target - " + err.Error()), err
-				}
-			} else {
-				_, err := c.V2.Security.UpdatePermissionTarget(ctx, *ptName, &pt)
-				if err != nil {
-					return logical.ErrorResponse("failed to update permission target - " + err.Error()), err
-				}
+			if _, err := ac.createOrUpdatePermissionTarget(&pt); err != nil {
+				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
 			}
 		}
-
 		// delete removed permission targets
 		// naive solution
 	OUTER:
 		for _, existingPt := range existingPts {
 			for _, newPt := range newPts {
-				if existingPt.Name == newPt.Name {
+				if *existingPt.Name == *newPt.Name {
 					continue OUTER
 				}
 			}
 			// existing permission target doesn't exist in new permission targets.
-			exist, err := c.V2.Security.HasPermissionTarget(ctx, *permissionTargetName(role, *existingPt.Name))
-			if err != nil {
-				return logical.ErrorResponse("failed to obtain permission target"), err
-			}
-			if exist {
-				_, err := c.V2.Security.DeletePermissionTarget(ctx, *permissionTargetName(role, *existingPt.Name))
-				if err != nil {
-					return logical.ErrorResponse("failed to delete permission target"), err
-				}
+			if _, err := ac.deletePermissionTarget(role, &existingPt); err != nil {
+				return logical.ErrorResponse("failed to delete a permission target: ", *existingPt.Name), err
 			}
 		}
 

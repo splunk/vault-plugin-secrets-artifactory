@@ -129,3 +129,14 @@ func testRoleList(req *logical.Request, b logical.Backend, t *testing.T) (*logic
 	resp, err := b.HandleRequest(context.Background(), req)
 	return resp, err
 }
+
+// Note: testing situation
+// 1. role create
+// 2. modification on exisitng permission target
+// 3. check the permission target in artifactory
+// 4. append a new permission target on top of existing ones
+// 5. check newly permission target is created along with old ones in artifactory
+// 6. remove a permission target
+// 7. check if the permission target is removed from artifactory
+// 8. remove a role
+// 9. check artifactory group and permissino targets are deleted in artifactory

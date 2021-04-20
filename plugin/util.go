@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	groupNamePrefix = "vault-plugin"
-	pluginOwnRole   = "VAULT_PLUGIN_OWN_ROLE"
+	groupNamePrefix     = "vault-plugin"
+	tokenUsernamePrefix = "auto-vault-plugin"
+	pluginOwnRole       = "VAULT_PLUGIN_OWN_ROLE"
 )
 
 func groupName(roleName string) string {
@@ -18,6 +19,9 @@ func groupName(roleName string) string {
 func permissionTargetName(roleEntry *RoleStorageEntry, name string) *string {
 	n := fmt.Sprintf("%s.%s", name, roleEntry.RoleID)
 	return &n
+}
+func tokenUsername(role_name string) string {
+	return fmt.Sprintf("%s.%s", tokenUsernamePrefix, role_name)
 }
 
 // replaceGroupName swaps pluginOwnRole with supplied group name
