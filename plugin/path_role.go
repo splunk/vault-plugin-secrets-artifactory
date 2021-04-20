@@ -207,10 +207,11 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 
 		// delete removed permission targets
 		// naive solution
+	OUTER:
 		for _, existingPt := range existingPts {
 			for _, newPt := range newPts {
 				if existingPt.Name == newPt.Name {
-					continue
+					continue OUTER
 				}
 			}
 			// existing permission target doesn't exist in new permission targets.

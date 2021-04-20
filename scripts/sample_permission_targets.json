@@ -1,13 +1,13 @@
 [
   {
-    "name": "docker",
+    "name": "docker-test",
     "repo": {
-      "include-patterns": ["**"] ,
+      "include-patterns": ["/prefix/**"] ,
       "exclude-patterns": [""],
       "repositories": ["docker-test-west-local", "docker-test-east-local"],
       "actions": {
             "groups" : {
-              "VAULT_PLUGIN_OWN_ROLE" : ["read"]
+              "VAULT_PLUGIN_OWN_ROLE" : ["read", "write"]
             }
       }
     }
@@ -26,3 +26,4 @@
     }
   }
 ]
+

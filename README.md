@@ -90,3 +90,28 @@ To keep the isolation, it doesn't share an artifactory group or permission targe
 
 - removal of an artifactory group and permission targets when the corresponding role is removed
 - removal of an artifactory permission target  when it's removed from the corresponding role
+
+## Testing Locally
+
+Requirements:
+
+- vault
+
+```sh
+# Build binary in plugins directory
+$ make build
+
+# Start vault dev server
+$ make dev-server
+
+# New terminal
+$ export VAULT_ADDR=https://127.0.0.1:8200
+$ export VAULT_TOKEN=root
+$ export ARTIFACTORY_URL="https://artifactory.example.com/artifactory"
+$ export BEARER_TOKEN=TOKEN
+
+# enable secrets backend and configuration
+$ ./scripts/setup_dev_vault.sh
+
+# You can then create a role and issue a token following above usage. 
+```
