@@ -1,0 +1,28 @@
+[
+  {
+    "name": "docker",
+    "repo": {
+      "include-patterns": ["**"] ,
+      "exclude-patterns": [""],
+      "repositories": ["docker-test-west-local", "docker-test-east-local"],
+      "actions": {
+            "groups" : {
+              "VAULT_PLUGIN_OWN_ROLE" : ["read"]
+            }
+      }
+    }
+  },
+  {
+    "name": "npm",
+    "repo": {
+      "include-patterns": ["**"] ,
+      "exclude-patterns": [""],
+      "repositories": ["npm-test-west-local", "npm-test-east-local"],
+      "actions": {
+            "groups" : {
+              "VAULT_PLUGIN_OWN_ROLE" : ["read"]
+            }
+      }
+    }
+  }
+]
