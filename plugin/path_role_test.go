@@ -14,7 +14,7 @@ var repo = os.Getenv("REPOSITORY_NAME")
 
 func TestPathRole(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping intergartion test (short)")
+		t.Skip("skipping integration test (short)")
 	}
 
 	b, storage := getTestBackend(t)

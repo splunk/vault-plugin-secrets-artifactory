@@ -48,45 +48,5 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 		),
 	}
 
-	// backend.artifactoryClient = newArtifactoryClient
-
 	return backend
 }
-
-// TODO allow for mocked client
-/*
-func newArtifactoryClient(config *ConfigStorageEntry) (ArtifactoryClient, error) {
-
-	c := &http.Client{} //nolint:ineffassign,staticcheck
-	if config.BearerToken != "" {
-		tp := transport.AccessTokenAuth{
-			AccessToken: config.BearerToken,
-		}
-		c = tp.Client()
-	} else if config.ApiKey != "" {
-		tp := transport.ApiKeyAuth{
-			ApiKey: config.ApiKey,
-		}
-		c = tp.Client()
-	} else if config.Username != "" && config.Password != "" {
-		tp := transport.BasicAuth{
-			Username: config.Username,
-			Password: config.Password,
-		}
-		c = tp.Client()
-	} else {
-		return ac, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
-	}
-
-	client, err := artifactory.NewClient(config.BaseURL, c)
-	if err != nil {
-		return ac, err
-	}
-
-	ac.client = client
-
-	return ac, nil
-
-}
-
-*/

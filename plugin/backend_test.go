@@ -27,9 +27,5 @@ func getTestBackend(t *testing.T) (logical.Backend, logical.Storage) {
 		return &mockArtifactoryClient{}, nil
 	}
 
-	// b.getClient = func(ctx context.Context, storage logical.Storage) (Client, error) {
-	// 	return &mockArtifactoryClient{}, nil
-	// }
-
 	return b, config.StorageView
 }

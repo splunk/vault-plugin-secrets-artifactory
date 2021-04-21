@@ -26,6 +26,6 @@ dev-server:
 	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39.0
 
 .tools/gocover-cobertura:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura
+	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.1.0
 
 .PHONY: all get build lint test report dev-server
