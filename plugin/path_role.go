@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
 	"github.com/google/uuid"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -63,7 +62,7 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 
 	for _, pt := range role.PermissionTargets {
 		if _, err := ac.deletePermissionTarget(role, &pt); err != nil {
-			return logical.ErrorResponse("failed to delete a permission target: ", *pt.Name), err
+			return logical.ErrorResponse("failed to delete a permission target: ", pt.Name), err
 		}
 	}
 
@@ -150,11 +149,11 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 	// TODO: garbage collection
 	//  - delete group if there's any error while creating a new permission target for a 'new' role
 	//  - delete any newly created permission targets if role isn't saved
-	if ptRaw, ok := data.GetOk("permission_targets"); ok {
-		role.RawPermissionTargets = ptRaw.(string)
+	if ptsRaw, ok := data.GetOk("permission_targets"); ok {
+		role.RawPermissionTargets = ptsRaw.(string)
 
-		newPts := []v2.PermissionTarget{}
-		err := json.Unmarshal([]byte(ptRaw.(string)), &newPts)
+		newPts := []PermissionTarget{}
+		err := json.Unmarshal([]byte(ptsRaw.(string)), &newPts)
 		if err != nil {
 			return logical.ErrorResponse("Error unmarshal permission targets. Expecting list of permission targets - " + err.Error()), err
 		}
@@ -167,29 +166,25 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 			if err != nil {
 				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
 			}
-			ptName := permissionTargetName(role, *pt.Name)
-			replaceGroupName(&pt, groupName(role.RoleID))
-			pt.Name = ptName
-
-			if _, err := ac.createOrUpdatePermissionTarget(&pt); err != nil {
+			if _, err := ac.createOrUpdatePermissionTarget(role, &pt); err != nil {
 				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
 			}
 		}
+
 		// garbage collect: delete removed permission targets
 		// naive solution
 	OUTER:
 		for _, existingPt := range existingPts {
 			for _, newPt := range newPts {
-				if *existingPt.Name == *newPt.Name {
+				if existingPt.Name == newPt.Name {
 					continue OUTER
 				}
 			}
 			// existing permission target doesn't exist in new permission targets.
 			if _, err := ac.deletePermissionTarget(role, &existingPt); err != nil {
-				return logical.ErrorResponse("failed to delete a permission target: ", *existingPt.Name), err
+				return logical.ErrorResponse("failed to delete a permission target: ", existingPt.Name), err
 			}
 		}
-
 	}
 
 	if err := backend.setRoleEntry(ctx, req.Storage, *role); err != nil {
@@ -251,14 +246,10 @@ with the following format:
 	{
 		"name": "name1",
 		"repo": {
-			"include-patterns": ["**"] (default),
-			"exclude-patterns": [""] (default),
+			"include_patterns": ["**"] (default),
+			"exclude_patterns": [""] (default),
 			"repositories": ["local-rep1", "local-rep2", "remote-rep1", "virtual-rep2"],
-			"actions": {
-				"groups" : {
-					"VAULT_PLUGIN_OWN_ROLE" : ["manage","read","annotate"]
-				}
-			}
+			"operations": ["manage","read","annotate"]
 		}
 	}
 ]

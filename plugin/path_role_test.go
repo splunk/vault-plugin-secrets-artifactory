@@ -37,14 +37,10 @@ func TestPathRole(t *testing.T) {
 		{
 			"name": "test",
 			"repo": {
-				"include-patterns": ["/mytest/**"] ,
-				"exclude-patterns": [""],
+				"include_patterns": ["/mytest/**"] ,
+				"exclude_patterns": [""],
 				"repositories": ["%s"],
-				"actions": {
-							"groups" : {
-								"VAULT_PLUGIN_OWN_ROLE" : ["read", "write", "annotate"]
-							}
-				}
+				"operations": ["read", "write", "annotate"]
 			}
 		}
 	]

@@ -2,27 +2,19 @@
   {
     "name": "docker-test",
     "repo": {
-      "include-patterns": ["/mydocker2/**"] ,
-      "exclude-patterns": [""],
+      "include_patterns": ["/mydocker2/**", "/newpath/prefix/**"] ,
+      "exclude_patterns": [""],
       "repositories": ["docker-test-west-local", "docker-test-east-local"],
-      "actions": {
-            "groups" : {
-              "VAULT_PLUGIN_OWN_ROLE" : ["read", "write", "annotate"]
-            }
-      }
+      "operations": ["read", "write", "annotate"]
     }
   },
   {
     "name": "npm-test",
     "repo": {
-      "include-patterns": ["**"] ,
-      "exclude-patterns": [""],
+      "include_patterns": ["**"] ,
+      "exclude_patterns": [""],
       "repositories": ["npm-test-west-local", "npm-test-east-local"],
-      "actions": {
-            "groups" : {
-              "VAULT_PLUGIN_OWN_ROLE" : ["read"]
-            }
-      }
+      "operations": ["read"]
     }
   }
 ]

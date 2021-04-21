@@ -62,7 +62,7 @@ func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, sto
 }
 
 func (ac *ArtifactoryClient) createOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error) {
-	name := groupName(role.RoleID)
+	name := groupName(role)
 	desc := fmt.Sprintf("vault plugin group for %s", role.Name)
 	group := v1.Group{
 		Name:        &name,
@@ -73,29 +73,33 @@ func (ac *ArtifactoryClient) createOrReplaceGroup(role *RoleStorageEntry) (*http
 }
 
 func (ac *ArtifactoryClient) deleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
-	return ac.client.V1.Security.DeleteGroup(ac.context, groupName(role.RoleID))
+	return ac.client.V1.Security.DeleteGroup(ac.context, groupName(role))
 }
 
-func (ac *ArtifactoryClient) createOrUpdatePermissionTarget(pt *v2.PermissionTarget) (*http.Response, error) {
-	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, *pt.Name)
+func (ac *ArtifactoryClient) createOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+	pt.Name = *permissionTargetName(role, pt.Name)
+	cpt := &v2.PermissionTarget{}
+	convertPermissionTarget(pt, cpt, role)
+
+	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, *cpt.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	if exist {
-		return ac.client.V2.Security.UpdatePermissionTarget(ac.context, *pt.Name, pt)
+		return ac.client.V2.Security.UpdatePermissionTarget(ac.context, *cpt.Name, cpt)
 	}
-	return ac.client.V2.Security.CreatePermissionTarget(ac.context, *pt.Name, pt)
+	return ac.client.V2.Security.CreatePermissionTarget(ac.context, *cpt.Name, cpt)
 }
 
-func (ac *ArtifactoryClient) deletePermissionTarget(role *RoleStorageEntry, pt *v2.PermissionTarget) (*http.Response, error) {
-
-	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, *permissionTargetName(role, *pt.Name))
+func (ac *ArtifactoryClient) deletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+	ptName := *permissionTargetName(role, pt.Name)
+	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, ptName)
 	if err != nil {
 		return nil, err
 	}
 	if exist {
-		return ac.client.V2.Security.DeletePermissionTarget(ac.context, *permissionTargetName(role, *pt.Name))
+		return ac.client.V2.Security.DeletePermissionTarget(ac.context, ptName)
 	}
 	return nil, nil
 }
@@ -104,7 +108,7 @@ func (ac *ArtifactoryClient) createToken(tokenReq TokenCreateEntry, role *RoleSt
 
 	u := tokenUsername(role.Name)
 	ttlInSecond := int(tokenReq.TTL.Seconds())
-	scope := fmt.Sprintf("member-of-groups:%s", groupName(role.RoleID))
+	scope := fmt.Sprintf("member-of-groups:%s", groupName(role))
 	acOpt := v1.AccessTokenOptions{
 		Username:  &u,
 		ExpiresIn: &ttlInSecond,

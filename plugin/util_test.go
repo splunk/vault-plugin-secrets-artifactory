@@ -9,16 +9,16 @@ import (
 )
 
 func TestValidatePermissionTarget(t *testing.T) {
-	repo := v2.Permission{
-		Repositories: &[]string{repo},
+	repo := &Permission{
+		Repositories: []string{repo},
 	}
 
 	t.Parallel()
 
 	t.Run("nil_name", func(t *testing.T) {
 		t.Parallel()
-		nilPtName := v2.PermissionTarget{
-			Repo: &repo,
+		nilPtName := PermissionTarget{
+			Repo: repo,
 		}
 		err := validatePermissionTarget(&nilPtName)
 		if err == nil {
@@ -33,9 +33,9 @@ func TestValidatePermissionTarget(t *testing.T) {
 		t.Parallel()
 
 		emptyString := ""
-		emptyPtName := v2.PermissionTarget{
-			Name: &emptyString,
-			Repo: &repo,
+		emptyPtName := PermissionTarget{
+			Name: emptyString,
+			Repo: repo,
 		}
 		err := validatePermissionTarget(&emptyPtName)
 		if err == nil {
@@ -48,32 +48,38 @@ func TestValidatePermissionTarget(t *testing.T) {
 
 }
 
-func TestReplaceGroupName(t *testing.T) {
-	groupName := "role1234"
-	perms := []string{"read", "annotate", "write"}
-	groups := map[string][]string{
-		"VAULT_PLUGIN_OWN_ROLE": perms,
-	}
-	entity := v2.Entity{
-		Groups: &groups,
-	}
-	pt := v2.PermissionTarget{
-		Repo: &v2.Permission{
-			Actions: &entity,
-		},
-	}
+func TestConvertPermissionTarget(t *testing.T) {
+	t.Parallel()
 
-	replaceGroupName(&pt, groupName)
+	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
 
-	if len(*pt.Repo.Actions.Groups) != 1 {
-		t.Fatalf("incorrect number of groups")
-	}
-
-	if p, ok := (*pt.Repo.Actions.Groups)[groupName]; ok {
-		if !reflect.DeepEqual(p, perms) {
-			t.Fatalf("permission doesn't match. exp: %v got: %v", perms, p)
+		role := &RoleStorageEntry{
+			Name:   "groupname",
+			RoleID: "1234567890",
 		}
-	} else {
-		t.Fatalf("expected group name %s doesn't exist", groupName)
-	}
+
+		pt := &PermissionTarget{
+			Name: "testname",
+			Repo: &Permission{
+				Repositories: []string{"repo"},
+				Operations:   []string{"read", "write"},
+			},
+		}
+		cpt := &v2.PermissionTarget{}
+		convertPermissionTarget(pt, cpt, role)
+
+		if len(*cpt.Repo.Actions.Groups) != 1 {
+			t.Fatalf("incorrect number of groups")
+		}
+
+		if len((*cpt.Repo.Actions.Groups)["vault-plugin.1234567890"]) != 2 {
+			t.Fatalf("incorrect number of operations")
+		}
+
+		if got, exp := (*cpt.Repo.Actions.Groups)["vault-plugin.1234567890"], []string{"read", "write"}; !reflect.DeepEqual(got, exp) {
+			t.Fatalf("operations don't match: exp: %v, got: %v", exp, got)
+		}
+
+	})
 }

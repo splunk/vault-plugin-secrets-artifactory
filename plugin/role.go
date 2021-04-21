@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -33,7 +31,7 @@ type RoleStorageEntry struct {
 	Name string `json:"name" structs:"name" mapstructure:"name"`
 
 	RawPermissionTargets string
-	PermissionTargets    []v2.PermissionTarget
+	PermissionTargets    []PermissionTarget
 }
 
 // validate checks whether a Role has been populated properly before saving
