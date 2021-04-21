@@ -51,8 +51,7 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 		return nil, nil
 	}
 
-	// remove the role
-	// TODO: garbage collect artifactory group and associated permission targets
+	// garbage collect: artifactory group and associated permission targets
 	// since permission targets are only created for this specific group, we must delete them when a group is deleted
 	ac, err := backend.getArtifactoryClient(ctx, req.Storage)
 	if err != nil {
@@ -132,12 +131,9 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.RoleID = roleID.String()
 		role.Name = roleName
 
-		// TODO: create artifactory group
-		// group name: vault-plugin.<role_id>
 		if _, err := ac.createOrReplaceGroup(role); err != nil {
-			return logical.ErrorResponse("failed to create/update an artifactory group - ", err.Error()), err
+			return logical.ErrorResponse("failed to create an artifactory group - ", err.Error()), err
 		}
-
 	}
 
 	if ttlRaw, ok := data.GetOk("token_ttl"); ok {
@@ -151,21 +147,26 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
-	// TODO: create permission targets in artifactory
-	// garbage collect permission targets when it's updated/removed
+	// TODO: garbage collection
+	//  - delete group if there's any error while creating a new permission target for a 'new' role
+	//  - delete any newly created permission targets if role isn't saved
 	if ptRaw, ok := data.GetOk("permission_targets"); ok {
 		role.RawPermissionTargets = ptRaw.(string)
 
 		newPts := []v2.PermissionTarget{}
 		err := json.Unmarshal([]byte(ptRaw.(string)), &newPts)
 		if err != nil {
-			return logical.ErrorResponse("Error unmarshal permission targets - " + err.Error()), err
+			return logical.ErrorResponse("Error unmarshal permission targets. Expecting list of permission targets - " + err.Error()), err
 		}
 
 		existingPts := role.PermissionTargets
 		role.PermissionTargets = newPts
 
 		for _, pt := range newPts {
+			err := validatePermissionTarget(&pt)
+			if err != nil {
+				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
+			}
 			ptName := permissionTargetName(role, *pt.Name)
 			replaceGroupName(&pt, groupName(role.RoleID))
 			pt.Name = ptName
@@ -174,7 +175,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
 			}
 		}
-		// delete removed permission targets
+		// garbage collect: delete removed permission targets
 		// naive solution
 	OUTER:
 		for _, existingPt := range existingPts {

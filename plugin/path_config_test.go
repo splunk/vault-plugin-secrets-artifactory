@@ -8,59 +8,84 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-func TestConfigBearerToken(t *testing.T) {
-	b, reqStorage := getTestBackend(t)
+func TestConfig(t *testing.T) {
+	t.Parallel()
 
-	testConfigRead(t, b, reqStorage, nil)
+	t.Run("bearer_token", func(t *testing.T) {
+		t.Parallel()
 
-	conf := map[string]interface{}{
-		"base_url":     "https://example.jfrog.io/example",
-		"bearer_token": "mybearertoken",
-		"max_ttl":      "600s",
-	}
+		b, reqStorage := getTestBackend(t)
 
-	testConfigUpdate(t, b, reqStorage, conf)
+		testConfigRead(t, b, reqStorage, nil)
 
-	expected := map[string]interface{}{
-		"base_url": "https://example.jfrog.io/example",
-		"max_ttl":  int64(600),
-	}
+		conf := map[string]interface{}{
+			"base_url":     "https://example.jfrog.io/example",
+			"bearer_token": "mybearertoken",
+			"max_ttl":      "600s",
+		}
 
-	testConfigRead(t, b, reqStorage, expected)
-	testConfigUpdate(t, b, reqStorage, map[string]interface{}{
-		"max_ttl": "50s",
+		testConfigUpdate(t, b, reqStorage, conf)
+
+		expected := map[string]interface{}{
+			"base_url": "https://example.jfrog.io/example",
+			"max_ttl":  int64(600),
+		}
+
+		testConfigRead(t, b, reqStorage, expected)
+		testConfigUpdate(t, b, reqStorage, map[string]interface{}{
+			"max_ttl": "50s",
+		})
+
+		expected["max_ttl"] = int64(50)
+		testConfigRead(t, b, reqStorage, expected)
 	})
 
-	expected["max_ttl"] = int64(50)
-	testConfigRead(t, b, reqStorage, expected)
-}
+	t.Run("api_key", func(t *testing.T) {
+		t.Parallel()
 
-func TestConfigUserPwd(t *testing.T) {
-	b, reqStorage := getTestBackend(t)
+		b, reqStorage := getTestBackend(t)
 
-	testConfigRead(t, b, reqStorage, nil)
+		testConfigRead(t, b, reqStorage, nil)
 
-	conf := map[string]interface{}{
-		"base_url": "https://example.jfrog.io/example",
-		"username": "uname",
-		"password": "pwd",
-		"max_ttl":  "600s",
-	}
+		conf := map[string]interface{}{
+			"base_url": "https://example.jfrog.io/example",
+			"api_eky":  "myapikey",
+			"max_ttl":  "300s",
+		}
 
-	testConfigUpdate(t, b, reqStorage, conf)
+		testConfigUpdate(t, b, reqStorage, conf)
 
-	expected := map[string]interface{}{
-		"base_url": "https://example.jfrog.io/example",
-		"max_ttl":  int64(600),
-	}
+		expected := map[string]interface{}{
+			"base_url": "https://example.jfrog.io/example",
+			"max_ttl":  int64(300),
+		}
 
-	testConfigRead(t, b, reqStorage, expected)
-	testConfigUpdate(t, b, reqStorage, map[string]interface{}{
-		"max_ttl": "50s",
+		testConfigRead(t, b, reqStorage, expected)
 	})
 
-	expected["max_ttl"] = int64(50)
-	testConfigRead(t, b, reqStorage, expected)
+	t.Run("user_pwd", func(t *testing.T) {
+		t.Parallel()
+
+		b, reqStorage := getTestBackend(t)
+
+		testConfigRead(t, b, reqStorage, nil)
+
+		conf := map[string]interface{}{
+			"base_url": "https://example.jfrog.io/example",
+			"username": "uname",
+			"password": "pwd",
+			"max_ttl":  "1h",
+		}
+
+		testConfigUpdate(t, b, reqStorage, conf)
+
+		expected := map[string]interface{}{
+			"base_url": "https://example.jfrog.io/example",
+			"max_ttl":  int64(3600),
+		}
+
+		testConfigRead(t, b, reqStorage, expected)
+	})
 }
 
 func testConfigUpdate(t *testing.T, b logical.Backend, s logical.Storage, d map[string]interface{}) {

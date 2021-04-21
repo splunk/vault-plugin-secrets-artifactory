@@ -24,8 +24,17 @@ func tokenUsername(role_name string) string {
 	return fmt.Sprintf("%s.%s", tokenUsernamePrefix, role_name)
 }
 
+// validatePermissionTarget checks on necessary fields in permission target
+func validatePermissionTarget(pt *v2.PermissionTarget) error {
+
+	if pt.Name == nil || *pt.Name == "" {
+		return fmt.Errorf("'name' field must be supplied")
+	}
+
+	return nil
+}
+
 // replaceGroupName swaps pluginOwnRole with supplied group name
-// this is crashing
 func replaceGroupName(pt *v2.PermissionTarget, groupName string) {
 	if pt.Repo != nil && pt.Repo.Actions != nil && pt.Repo.Actions.Groups != nil {
 		for name, Ops := range *pt.Repo.Actions.Groups {

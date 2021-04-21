@@ -8,6 +8,7 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 
 ## Requirements
 
+Go: 1.6 or above
 Artifactory: 6.6.0 or above for API V2 support
 A token with admin privileges to manage groups and permission targets and to create tokens
 
@@ -121,12 +122,20 @@ $ ./scripts/setup_dev_vault.sh
 # You can then create a role and issue a token following above usage. 
 ```
 
+## Tests
+
+To run unit tests,
+
+```sh
+$ make test
+```
+
+To run integration tests that spins up local vault and artifactory instance, 
+
+```sh
+$ make integration-test
+```
+
 ## Roadmap
 
-This plugin is being initially developed for an internal application at Splunk for suite of ephemeral credentials
-
-## Reporting Issues
-
-## Contributors
-
-Merge requests, issues and comments are always welcomed
+This plugin is being initially developed for an internal application at Splunk for suite of ephemeral credentials. No user or service account should be able to publish production artifacts with a static credential.

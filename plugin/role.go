@@ -2,12 +2,14 @@ package artifactorysecrets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -34,6 +36,38 @@ type RoleStorageEntry struct {
 	PermissionTargets    []v2.PermissionTarget
 }
 
+// validate checks whether a Role has been populated properly before saving
+func (role RoleStorageEntry) validate() error {
+	var err *multierror.Error
+	if role.Name == "" {
+		err = multierror.Append(err, errors.New("role name is empty"))
+	}
+	if role.RoleID == "" {
+		err = multierror.Append(err, errors.New("role id is empty"))
+	}
+	if role.RawPermissionTargets == "" {
+		err = multierror.Append(err, errors.New("raw permission targets are empty"))
+	}
+	if role.PermissionTargets == nil {
+		err = multierror.Append(err, errors.New("permission targets are empty"))
+	}
+	return err.ErrorOrNil()
+}
+
+// save saves a role to storage
+func (role RoleStorageEntry) save(ctx context.Context, storage logical.Storage) error {
+	if err := role.validate(); err != nil {
+		return err
+	}
+
+	entry, err := logical.StorageEntryJSON(fmt.Sprintf("%s/%s", rolesPrefix, role.Name), role)
+	if err != nil {
+		return err
+	}
+
+	return storage.Put(ctx, entry)
+}
+
 // get or create the basic lock for the role name
 func (backend *ArtifactoryBackend) roleLock(roleName string) *locksutil.LockEntry {
 	return locksutil.LockForKey(backend.roleLocks, roleName)
@@ -51,16 +85,7 @@ func (backend *ArtifactoryBackend) setRoleEntry(ctx context.Context, storage log
 	lock.RLock()
 	defer lock.RUnlock()
 
-	entry, err := logical.StorageEntryJSON(fmt.Sprintf("%s/%s", rolesPrefix, roleName), role)
-	if err != nil {
-		return fmt.Errorf("Error converting entry to JSON: %v", err)
-	}
-
-	if err := storage.Put(ctx, entry); err != nil {
-		return fmt.Errorf("Error saving role: %v", err)
-	}
-
-	return nil
+	return role.save(ctx, storage)
 }
 
 // deleteRoleEntry will remove the role with specified name from storage

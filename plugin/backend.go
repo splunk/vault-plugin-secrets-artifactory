@@ -2,7 +2,6 @@ package artifactorysecrets
 
 import (
 	"context"
-	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
@@ -14,8 +13,8 @@ type ArtifactoryBackend struct {
 	*framework.Backend
 	view logical.Storage
 
-	// Locks for guarding service clients
-	clientMutex sync.RWMutex
+	// Locks for guarding service clients - unused
+	// clientMutex sync.RWMutex
 
 	roleLocks []*locksutil.LockEntry
 }

@@ -3,17 +3,22 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-func TestIssueValidateToken(t *testing.T) {
+func TestIssueToken(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping intergartion test (short)")
+	}
+
 	b, storage := getTestBackend(t)
 
 	conf := map[string]interface{}{
-		"base_url":     "https://example.jfrog.io/example",
-		"bearer_token": "mybearertoken",
+		"base_url":     os.Getenv("ARTIFACTORY_URL"),
+		"bearer_token": os.Getenv("BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
 	testConfigUpdate(t, b, storage, conf)
@@ -22,37 +27,47 @@ func TestIssueValidateToken(t *testing.T) {
 		Storage: storage,
 	}
 	roleName := "test_role"
-	resp, err := testRoleCreate(req, b, t, roleName)
+	pt := fmt.Sprintf(`
+	[
+		{
+			"name": "test",
+			"repo": {
+				"include-patterns": ["/mytest/**"] ,
+				"exclude-patterns": [""],
+				"repositories": ["%s"],
+				"actions": {
+							"groups" : {
+								"VAULT_PLUGIN_OWN_ROLE" : ["read", "write", "annotate"]
+							}
+				}
+			}
+		}
+	]
+	`, repo)
+	resp, err := testRoleCreate(req, b, t, roleName, pt)
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 
-	/* Enable this when we have a temp artifactory bearer token */
-	//resp, err = testTokenIssue(req, b, t, roleName, entryName)
-	//if err != nil || (resp != nil && resp.IsError()) {
-	//	t.Fatalf("err:%s resp:%#v\n", err, resp)
-	//}
-	//
-	//if resp.Data["access_token"] == "" {
-	//	t.Fatal("no token returned\n")
-	//}
-	//
-	//if resp.Data["username"] == "" {
-	//	t.Fatal("no username returned\n")
-	//}
+	resp, err = testIssueToken(req, b, t, roleName)
+	if err != nil || (resp != nil && resp.IsError()) {
+		t.Fatalf("err:%s resp:%#v\n", err, resp)
+	}
+
+	if resp.Data["access_token"] == "" {
+		t.Fatal("no token returned\n")
+	}
+
+	if resp.Data["username"] == "" {
+		t.Fatal("no username returned\n")
+	}
 
 }
 
 // create the token given the parameters
-func testTokenIssue(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
-	data := map[string]interface{}{
-		"role_name": roleName,
-		"path":      "testpath1",
-	}
-
+func testIssueToken(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
 	req.Operation = logical.UpdateOperation
-	req.Path = fmt.Sprintf("issue/%s", roleName)
-	req.Data = data
+	req.Path = fmt.Sprintf("token/%s", roleName)
 
 	resp, err := b.HandleRequest(context.Background(), req)
 

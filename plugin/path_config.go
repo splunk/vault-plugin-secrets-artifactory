@@ -19,6 +19,10 @@ var configSchema = map[string]*framework.FieldSchema{
 		Type:        framework.TypeString,
 		Description: `Artifactory token that has permissions to generate other tokens`,
 	},
+	"api_key": {
+		Type:        framework.TypeString,
+		Description: `Artifactory API key of a user that has permissions to generate other tokens`,
+	},
 	"username": {
 		Type:        framework.TypeString,
 		Description: `Artifactory user that has permissions to generate other tokens`,

@@ -3,36 +3,60 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
 )
 
+var repo = os.Getenv("REPOSITORY_NAME")
+
 func TestPathRole(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping intergartion test (short)")
+	}
+
 	b, storage := getTestBackend(t)
 
 	conf := map[string]interface{}{
-		"base_url":     "https://example.jfrog.io/example",
-		"bearer_token": "mybearertoken",
+		"base_url":     os.Getenv("ARTIFACTORY_URL"),
+		"bearer_token": os.Getenv("BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
 
 	testConfigUpdate(t, b, storage, conf)
-	// TODO: need to mock artifactory client so that test doesn't necessarily hit artifactory intance
 
 	/***  TEST CREATE OPERATION ***/
 	req := &logical.Request{
 		Storage: storage,
 	}
 
-	resp, err := testRoleCreate(req, b, t, "test_role1")
+	pt := fmt.Sprintf(`
+	[
+		{
+			"name": "test",
+			"repo": {
+				"include-patterns": ["/mytest/**"] ,
+				"exclude-patterns": [""],
+				"repositories": ["%s"],
+				"actions": {
+							"groups" : {
+								"VAULT_PLUGIN_OWN_ROLE" : ["read", "write", "annotate"]
+							}
+				}
+			}
+		}
+	]
+	`, repo)
+
+	resp, err := testRoleCreate(req, b, t, "test_role1", pt)
 
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 
-	resp, err = testRoleCreate(req, b, t, "test_role2")
+	resp, err = testRoleCreate(req, b, t, "test_role2", pt)
 
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
@@ -89,11 +113,11 @@ func TestPathRole(t *testing.T) {
 	}
 }
 
-func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
+func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName, permissionTargets string) (*logical.Response, error) {
 	data := map[string]interface{}{
-		"name": roleName,
+		"name":               roleName,
+		"permission_targets": permissionTargets,
 	}
-
 	req.Operation = logical.CreateOperation
 	req.Path = fmt.Sprintf("roles/%s", roleName)
 	req.Data = data

@@ -103,11 +103,11 @@ func (ac *ArtifactoryClient) deletePermissionTarget(role *RoleStorageEntry, pt *
 func (ac *ArtifactoryClient) createToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
 
 	u := tokenUsername(role.Name)
-	ttlinsec := int(tokenReq.TTL.Seconds())
+	ttlInSecond := int(tokenReq.TTL.Seconds())
 	scope := fmt.Sprintf("member-of-groups:%s", groupName(role.RoleID))
 	acOpt := v1.AccessTokenOptions{
 		Username:  &u,
-		ExpiresIn: &ttlinsec,
+		ExpiresIn: &ttlInSecond,
 		Scope:     &scope,
 	}
 
