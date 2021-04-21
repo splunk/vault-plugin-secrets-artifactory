@@ -21,6 +21,9 @@ func (backend *ArtifactoryBackend) createTokenEntry(ctx context.Context, storage
 	}
 
 	token, _, err := ac.createToken(createEntry, roleEntry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain a token: %v", err)
+	}
 
 	tokenOutput := map[string]interface{}{
 		"access_token": token.AccessToken,

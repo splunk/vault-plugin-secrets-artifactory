@@ -70,6 +70,11 @@ func (backend *ArtifactoryBackend) pathConfigWrite(ctx context.Context, req *log
 		cfg.BearerToken = bearerToken.(string)
 	}
 
+	if apiKey, ok := data.GetOk("api_key"); ok {
+
+		cfg.ApiKey = apiKey.(string)
+	}
+
 	if username, ok := data.GetOk("username"); ok {
 
 		cfg.Username = username.(string)

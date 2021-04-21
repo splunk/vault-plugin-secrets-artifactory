@@ -84,6 +84,11 @@ To apply a dynamically created group to permission targets, you must use `VAULT_
 
 To update permission targets for an existing role, please also supply existing permisssion targets in order to preserve them in a role. Update operation without supplying existing permission targets registered to a role will delete those existing permission targets
 
+```sh
+# To grab existing permission targets
+$ vault read artifactory/roles/ci-role -format=json | jq -r .data.permission_targets > permission_targets.json
+```
+
 ### Garbage Collection
 
 To keep the isolation, it doesn't share an artifactory group or permission targets amongst different roles. To this nature, it collects garbage where it's unnecessary when update/delete operation is performed on a role

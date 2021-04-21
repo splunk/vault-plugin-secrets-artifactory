@@ -46,6 +46,9 @@ func TestPathRole(t *testing.T) {
 
 	var returnedRole RoleStorageEntry
 	err = mapstructure.Decode(resp.Data, &returnedRole)
+	if err != nil {
+		t.Fatalf("failed to decode. err: %s", err)
+	}
 
 	if returnedRole.Name != "test_role1" {
 		t.Fatalf("incorrect role name %s returned, not the same as saved value \n", returnedRole.Name)
@@ -65,6 +68,9 @@ func TestPathRole(t *testing.T) {
 
 	var listResp map[string]interface{}
 	err = mapstructure.Decode(resp.Data, &listResp)
+	if err != nil {
+		t.Fatalf("failed to decode. err: %s", err)
+	}
 
 	returnedRoles := listResp["keys"].([]string)
 
@@ -125,7 +131,7 @@ func testRoleDelete(req *logical.Request, b logical.Backend, t *testing.T, roleN
 func testRoleList(req *logical.Request, b logical.Backend, t *testing.T) (*logical.Response, error) {
 
 	req.Operation = logical.ListOperation
-	req.Path = fmt.Sprintf("roles")
+	req.Path = "roles"
 	resp, err := b.HandleRequest(context.Background(), req)
 	return resp, err
 }

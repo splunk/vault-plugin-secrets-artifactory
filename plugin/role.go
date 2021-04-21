@@ -16,16 +16,6 @@ const (
 	rolesPrefix = "roles"
 )
 
-type allowedOp string
-
-const (
-	readOp     allowedOp = "read"
-	writeOp    allowedOp = "write"
-	annotateOp allowedOp = "annotate"
-	deleteOp   allowedOp = "delete"
-	manageOp   allowedOp = "manage"
-)
-
 type RoleStorageEntry struct {
 	// `json:"" structs:"" mapstructure:""`
 	// The UUID that defines this role

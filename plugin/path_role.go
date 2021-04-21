@@ -237,11 +237,11 @@ func pathRoleList(backend *ArtifactoryBackend) []*framework.Path {
 	return paths
 }
 
-const pathRoleHelpSyn = `Read/write sets of permission targets to be given to generated credentials for specified group.`
+const pathRoleHelpSyn = `Read/write sets of permission targets to be given to generated credentials for specified role.`
 const pathRoleHelpDesc = `
 This path allows you create roles, which bind sets of permission targets
-to specific GCP group. Secrets are generated under a role and will have the
-given set of permission targets on group.
+to specific repositories with patterns and actinos. Secrets are generated 
+under a role and will have the given set of permission targets on group.
 
 The specified permission targets file accepts an JSON string
 with the following format:
@@ -254,13 +254,8 @@ with the following format:
 			"exclude-patterns": [""] (default),
 			"repositories": ["local-rep1", "local-rep2", "remote-rep1", "virtual-rep2"],
 			"actions": {
-				"users" : {
-					"bob": ["read","write","manage"],
-					"alice" : ["write","annotate", "read"]
-				},
 				"groups" : {
-					"dev-leads" : ["manage","read","annotate"],
-					"readers" : ["read"]
+					"VAULT_PLUGIN_OWN_ROLE" : ["manage","read","annotate"]
 				}
 			}
 		}

@@ -2,7 +2,7 @@
   {
     "name": "docker-test",
     "repo": {
-      "include-patterns": ["/mydocker/**"] ,
+      "include-patterns": ["/mydocker2/**"] ,
       "exclude-patterns": [""],
       "repositories": ["docker-test-west-local", "docker-test-east-local"],
       "actions": {

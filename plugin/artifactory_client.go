@@ -30,10 +30,15 @@ func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, sto
 		return ac, fmt.Errorf("artifactory backend configuration has not been set up")
 	}
 
-	c := &http.Client{}
+	c := &http.Client{} //nolint:ineffassign,staticcheck
 	if config.BearerToken != "" {
 		tp := transport.AccessTokenAuth{
 			AccessToken: config.BearerToken,
+		}
+		c = tp.Client()
+	} else if config.ApiKey != "" {
+		tp := transport.ApiKeyAuth{
+			ApiKey: config.ApiKey,
 		}
 		c = tp.Client()
 	} else if config.Username != "" && config.Password != "" {
@@ -43,7 +48,7 @@ func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, sto
 		}
 		c = tp.Client()
 	} else {
-		return ac, fmt.Errorf("bearer token or a pair of username/password isn't configured")
+		return ac, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
 	}
 
 	client, err := artifactory.NewClient(config.BaseURL, c)
