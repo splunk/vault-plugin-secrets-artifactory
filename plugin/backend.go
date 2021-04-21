@@ -13,7 +13,9 @@ type ArtifactoryBackend struct {
 	*framework.Backend
 	view logical.Storage
 
-	// Locks for guarding service clients - unused
+	getClient func(ctx context.Context, config *ConfigStorageEntry) (Client, error)
+
+	// Locks for guarding service clients
 	// clientMutex sync.RWMutex
 
 	roleLocks []*locksutil.LockEntry
@@ -33,6 +35,7 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 	backend := &ArtifactoryBackend{
 		view:      conf.StorageView,
 		roleLocks: locksutil.CreateLocks(),
+		getClient: NewClient,
 	}
 
 	backend.Backend = &framework.Backend{

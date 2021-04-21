@@ -15,12 +15,22 @@ type TokenCreateEntry struct {
 }
 
 func (backend *ArtifactoryBackend) createTokenEntry(ctx context.Context, storage logical.Storage, createEntry TokenCreateEntry, roleEntry *RoleStorageEntry) (map[string]interface{}, error) {
-	ac, err := backend.getArtifactoryClient(ctx, storage)
+	cfg, err := backend.getConfig(ctx, storage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain artifactory config: %v", err)
+	}
+
+	ac, err := backend.getClient(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain artifactory client: %v", err)
 	}
 
-	token, _, err := ac.createToken(createEntry, roleEntry)
+	// ac, err := backend.getArtifactoryClient(ctx, storage)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to obtain artifactory client: %v", err)
+	// }
+
+	token, _, err := ac.CreateToken(createEntry, roleEntry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain a token: %v", err)
 	}

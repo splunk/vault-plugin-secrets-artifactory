@@ -52,16 +52,23 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 
 	// garbage collect: artifactory group and associated permission targets
 	// since permission targets are only created for this specific group, we must delete them when a group is deleted
-	ac, err := backend.getArtifactoryClient(ctx, req.Storage)
+	// ac, err := backend.getArtifactoryClient(ctx, req.Storage)
+
+	cfg, err := backend.getConfig(ctx, req.Storage)
+	if err != nil {
+		return logical.ErrorResponse("failed to obtain artifactory config"), err
+	}
+
+	ac, err := backend.getClient(ctx, cfg)
 	if err != nil {
 		return logical.ErrorResponse("failed to obtain artifactory client"), err
 	}
-	if _, _, err = ac.deleteGroup(role); err != nil {
+	if _, _, err = ac.DeleteGroup(role); err != nil {
 		return nil, err
 	}
 
 	for _, pt := range role.PermissionTargets {
-		if _, err := ac.deletePermissionTarget(role, &pt); err != nil {
+		if _, err := ac.DeletePermissionTarget(role, &pt); err != nil {
 			return logical.ErrorResponse("failed to delete a permission target: ", pt.Name), err
 		}
 	}
@@ -116,7 +123,12 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		return logical.ErrorResponse("Error reading role"), err
 	}
 
-	ac, err := backend.getArtifactoryClient(ctx, req.Storage)
+	cfg, err := backend.getConfig(ctx, req.Storage)
+	if err != nil {
+		return logical.ErrorResponse("failed to obtain artifactory config"), err
+	}
+
+	ac, err := backend.getClient(ctx, cfg)
 	if err != nil {
 		return logical.ErrorResponse("failed to obtain artifactory client"), err
 	}
@@ -130,7 +142,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.RoleID = roleID.String()
 		role.Name = roleName
 
-		if _, err := ac.createOrReplaceGroup(role); err != nil {
+		if _, err := ac.CreateOrReplaceGroup(role); err != nil {
 			return logical.ErrorResponse("failed to create an artifactory group - ", err.Error()), err
 		}
 	}
@@ -166,7 +178,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 			if err != nil {
 				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
 			}
-			if _, err := ac.createOrUpdatePermissionTarget(role, &pt); err != nil {
+			if _, err := ac.CreateOrUpdatePermissionTarget(role, &pt); err != nil {
 				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
 			}
 		}
@@ -181,7 +193,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 				}
 			}
 			// existing permission target doesn't exist in new permission targets.
-			if _, err := ac.deletePermissionTarget(role, &existingPt); err != nil {
+			if _, err := ac.DeletePermissionTarget(role, &existingPt); err != nil {
 				return logical.ErrorResponse("failed to delete a permission target: ", existingPt.Name), err
 			}
 		}

@@ -1,20 +1,23 @@
 NAME?=vault-artifactory-secrets-plugin
 
+.DEFAULT_GOAL := all
+all: get build lint test 
+
 get:
 	go get ./...
 
-test:
-	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./...
-
-report: .tools/gocover-cobertura
-	go tool cover -html=coverage.out -o coverage.html
-	.tools/gocover-cobertura < coverage.out > coverage.xml
+build:
+	go build -o plugins/$(NAME)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
 
-build:
-	go build -o plugins/$(NAME)
+test:
+	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
+
+report: .tools/gocover-cobertura
+	go tool cover -html=coverage.out -o coverage.html
+	.tools/gocover-cobertura < coverage.out > coverage.xml
 
 dev-server:
 	vault server -log-level=debug -dev -dev-root-token-id=root -dev-plugin-dir=./plugins
@@ -23,4 +26,6 @@ dev-server:
 	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39.0
 
 .tools/gocover-cobertura:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura
+	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.1.0
+
+.PHONY: all get build lint test report dev-server
