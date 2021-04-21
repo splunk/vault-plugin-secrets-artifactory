@@ -165,4 +165,4 @@ func testRoleList(req *logical.Request, b logical.Backend, t *testing.T) (*logic
 // 6. remove a permission target
 // 7. check if the permission target is removed from artifactory
 // 8. remove a role
-// 9. check artifactory group and permissino targets are deleted in artifactory
+// 9. check artifactory group and permission targets are deleted in artifactory

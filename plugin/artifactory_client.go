@@ -9,25 +9,30 @@ import (
 	"github.com/atlassian/go-artifactory/v2/artifactory/transport"
 	v1 "github.com/atlassian/go-artifactory/v2/artifactory/v1"
 	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
-	"github.com/hashicorp/vault/sdk/logical"
 )
 
-type ArtifactoryClient struct {
+type Client interface {
+	CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error)
+	DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error)
+	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error)
+	DeletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error)
+	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error)
+}
+
+type artifactoryClient struct {
 	client  *artifactory.Artifactory
 	context context.Context
 }
 
-func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, storage logical.Storage) (*ArtifactoryClient, error) {
-	ac := &ArtifactoryClient{
-		context: ctx,
-	}
-	config, err := backend.getConfig(ctx, storage)
-	if err != nil {
-		return ac, err
+var _ Client = &artifactoryClient{}
+
+func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) {
+	if config == nil {
+		return nil, fmt.Errorf("artifactory backend configuration has not been set up")
 	}
 
-	if config == nil {
-		return ac, fmt.Errorf("artifactory backend configuration has not been set up")
+	ac := &artifactoryClient{
+		context: ctx,
 	}
 
 	c := &http.Client{} //nolint:ineffassign,staticcheck
@@ -59,9 +64,10 @@ func (backend *ArtifactoryBackend) getArtifactoryClient(ctx context.Context, sto
 	ac.client = client
 
 	return ac, nil
+
 }
 
-func (ac *ArtifactoryClient) createOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error) {
+func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error) {
 	name := groupName(role)
 	desc := fmt.Sprintf("vault plugin group for %s", role.Name)
 	group := v1.Group{
@@ -72,11 +78,11 @@ func (ac *ArtifactoryClient) createOrReplaceGroup(role *RoleStorageEntry) (*http
 	return ac.client.V1.Security.CreateOrReplaceGroup(ac.context, name, &group)
 }
 
-func (ac *ArtifactoryClient) deleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
+func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
 	return ac.client.V1.Security.DeleteGroup(ac.context, groupName(role))
 }
 
-func (ac *ArtifactoryClient) createOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
 	pt.Name = *permissionTargetName(role, pt.Name)
 	cpt := &v2.PermissionTarget{}
 	convertPermissionTarget(pt, cpt, role)
@@ -92,7 +98,7 @@ func (ac *ArtifactoryClient) createOrUpdatePermissionTarget(role *RoleStorageEnt
 	return ac.client.V2.Security.CreatePermissionTarget(ac.context, *cpt.Name, cpt)
 }
 
-func (ac *ArtifactoryClient) deletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+func (ac *artifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
 	ptName := *permissionTargetName(role, pt.Name)
 	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, ptName)
 	if err != nil {
@@ -104,7 +110,7 @@ func (ac *ArtifactoryClient) deletePermissionTarget(role *RoleStorageEntry, pt *
 	return nil, nil
 }
 
-func (ac *ArtifactoryClient) createToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
+func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
 
 	u := tokenUsername(role.Name)
 	ttlInSecond := int(tokenReq.TTL.Seconds())

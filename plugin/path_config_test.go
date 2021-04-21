@@ -89,6 +89,7 @@ func TestConfig(t *testing.T) {
 }
 
 func testConfigUpdate(t *testing.T, b logical.Backend, s logical.Storage, d map[string]interface{}) {
+	t.Helper()
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.UpdateOperation,
 		Path:      configPrefix,
@@ -104,6 +105,7 @@ func testConfigUpdate(t *testing.T, b logical.Backend, s logical.Storage, d map[
 }
 
 func testConfigRead(t *testing.T, b logical.Backend, s logical.Storage, expected map[string]interface{}) {
+	t.Helper()
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.ReadOperation,
 		Path:      configPrefix,
