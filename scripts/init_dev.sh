@@ -24,7 +24,7 @@ auth="Bearer $ARTIFACTORY_BEARER_TOKEN"
 # install license key for Artifactory Pro (required to enable all API endpoints)
 installed=$(curl -sSH "Authorization: $auth" "${ARTIFACTORY_URL}/api/system/licenses")
 
-if [ -n "$installed" ]; then
+if [ -n $(echo "$installed" | jq '.licensedTo') ]; then
   echo
   echo "License key already installed:" >&2
   echo "$installed" | jq >&2
@@ -55,6 +55,7 @@ echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
 echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
 echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
+echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
 
 
 export ARTIFACTORY_URL='http://artifactory:8081/artifactory'

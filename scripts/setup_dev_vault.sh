@@ -3,7 +3,7 @@
 : "${ARTIFACTORY_URL:?unset}"
 
 existing=$(vault secrets list -format json | jq -r '."artifactory/"')
-if [ -z "$existing" ]; then
+if [ "$existing" == "null" ]; then
   vault secrets enable -path=artifactory vault-artifactory-secrets-plugin || true
 else
   echo
