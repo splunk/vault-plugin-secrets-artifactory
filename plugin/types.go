@@ -8,7 +8,6 @@ type Permission struct {
 }
 
 type PermissionTarget struct {
-	Name  string      `json:"name"`
 	Repo  *Permission `json:"repo,omitempty"`
 	Build *Permission `json:"build,omitempty"`
 	// ReleaseBundle Permission `json:"release_bundle,omitempty"`

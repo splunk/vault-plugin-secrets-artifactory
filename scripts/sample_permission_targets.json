@@ -1,6 +1,5 @@
 [
   {
-    "name": "docker-test",
     "repo": {
       "include_patterns": ["/mydocker2/**", "/newpath/prefix/**"] ,
       "exclude_patterns": [""],
@@ -9,7 +8,6 @@
     }
   },
   {
-    "name": "npm-test",
     "repo": {
       "include_patterns": ["**"] ,
       "exclude_patterns": [""],

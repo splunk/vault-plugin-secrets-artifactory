@@ -47,6 +47,6 @@ These rollbackls are API calls, so they may also fail. The secrets engine uses W
 While Vault will initially create and assign permission targets to groups, it is possible that an external user deletes or modifies this group and/or permission targets. These changesare difficult to detect, and it is best to prevent this type of modification.  
 
 Vault-owned group have in the format: `vault-plugin.<UUID of Role ID>`
-Vault-owned permission target have in the format: `vault-plugin.<'name' field of user supplied permission target>.<UUID of Role ID>`
+Vault-owned permission target have in the format: `vault-plugin.pt<index of permission target counts>.<UUID of Role ID>`
 
 Communicate with your teams to not modify these resources.

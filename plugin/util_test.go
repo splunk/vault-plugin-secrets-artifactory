@@ -32,9 +32,7 @@ func TestValidatePermissionTarget(t *testing.T) {
 	t.Run("empty_name", func(t *testing.T) {
 		t.Parallel()
 
-		emptyString := ""
 		emptyPtName := PermissionTarget{
-			Name: emptyString,
 			Repo: repo,
 		}
 		err := emptyPtName.assertValid()
@@ -60,14 +58,13 @@ func TestConvertPermissionTarget(t *testing.T) {
 		}
 
 		pt := &PermissionTarget{
-			Name: "testname",
 			Repo: &Permission{
 				Repositories: []string{"repo"},
 				Operations:   []string{"read", "write"},
 			},
 		}
 		cpt := &v2.PermissionTarget{}
-		convertPermissionTarget(pt, cpt, role)
+		convertPermissionTarget(pt, cpt, groupName(role), "testname")
 
 		if len(*cpt.Repo.Actions.Groups) != 1 {
 			t.Fatalf("incorrect number of groups")

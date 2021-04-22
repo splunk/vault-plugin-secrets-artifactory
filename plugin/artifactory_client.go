@@ -14,8 +14,8 @@ import (
 type Client interface {
 	CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error)
 	DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error)
-	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error)
-	DeletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error)
+	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error)
+	DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error)
 	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error)
 }
 
@@ -82,10 +82,9 @@ func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) (*string, *http
 	return ac.client.V1.Security.DeleteGroup(ac.context, groupName(role))
 }
 
-func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
-	pt.Name = *permissionTargetName(role, pt.Name)
+func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error) {
 	cpt := &v2.PermissionTarget{}
-	convertPermissionTarget(pt, cpt, role)
+	convertPermissionTarget(pt, cpt, groupName(role), ptName)
 
 	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, *cpt.Name)
 	if err != nil {
@@ -98,8 +97,7 @@ func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEnt
 	return ac.client.V2.Security.CreatePermissionTarget(ac.context, *cpt.Name, cpt)
 }
 
-func (ac *artifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
-	ptName := *permissionTargetName(role, pt.Name)
+func (ac *artifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error) {
 	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, ptName)
 	if err != nil {
 		return nil, err

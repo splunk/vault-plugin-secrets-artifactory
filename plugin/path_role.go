@@ -67,9 +67,11 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 		return nil, err
 	}
 
-	for _, pt := range role.PermissionTargets {
-		if _, err := ac.DeletePermissionTarget(role, &pt); err != nil {
-			return logical.ErrorResponse("failed to delete a permission target: ", pt.Name), err
+	// Delete all permission targets
+	for idx := range role.PermissionTargets {
+		ptName := permissionTargetName(role, idx)
+		if _, err := ac.DeletePermissionTarget(role, ptName); err != nil {
+			return logical.ErrorResponse("failed to delete a permission target: ", ptName), err
 		}
 	}
 
@@ -174,32 +176,29 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		for _, pt := range newPts {
 			err := pt.assertValid()
 			if err != nil {
-				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
+				return logical.ErrorResponse("Failed to validate a permission target - " + err.Error()), err
 			}
 		}
 
 		existingPts := role.PermissionTargets
 		role.PermissionTargets = newPts
 
-		for _, pt := range newPts {
-			if _, err := ac.CreateOrUpdatePermissionTarget(role, &pt); err != nil {
-				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
+		for idx, pt := range newPts {
+			ptName := permissionTargetName(role, idx)
+			if _, err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
+				return logical.ErrorResponse("Failed to create/update a permission target - ", err.Error()), err
 			}
 		}
 
-		// garbage collect: delete removed permission targets
+		// garbage collect: delete excess permission targets
 		// naive solution
 		// This will be replaced with WAL rollback.
-	OUTER:
-		for _, existingPt := range existingPts {
-			for _, newPt := range newPts {
-				if existingPt.Name == newPt.Name {
-					continue OUTER
+		if len(existingPts) > len(newPts) {
+			for idx := range existingPts[len(newPts):] {
+				ptName := permissionTargetName(role, idx)
+				if _, err := ac.DeletePermissionTarget(role, ptName); err != nil {
+					return logical.ErrorResponse("failed to delete a permission target - ", err.Error()), err
 				}
-			}
-			// existing permission target doesn't exist in new permission targets.
-			if _, err := ac.DeletePermissionTarget(role, &existingPt); err != nil {
-				return logical.ErrorResponse("failed to delete a permission target: ", existingPt.Name), err
 			}
 		}
 	}

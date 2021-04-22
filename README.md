@@ -62,7 +62,7 @@ role as `role_id` and appends it to the group and permission target names:
 | Artifactory Object | format                                                                | example                                             |
 | ------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
 | Group              | `vault-plugin.<role_id>`                                              | `vault-plugin.9ace47f6-a205-11eb-8b68-acde48001122` |
-| Permission Target  | `vault-plugin.<"name" field of supplied permission target>.<role_id>` | `npm-test.9ace47f6-a205-11eb-8b68-acde48001122`     |
+| Permission Target  | `vault-plugin.pt<index of permission target counts>.<role_id>` | `npm-test.9ace47f6-a205-11eb-8b68-acde48001122`     |
 
 Token is generated with a transient user and returned as key value pair:
 

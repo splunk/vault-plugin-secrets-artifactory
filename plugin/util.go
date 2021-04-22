@@ -15,19 +15,18 @@ func groupName(roleEntry *RoleStorageEntry) string {
 	return fmt.Sprintf("%s.%s", pluginPrefix, roleEntry.RoleID)
 }
 
-func permissionTargetName(roleEntry *RoleStorageEntry, ptName string) *string {
-	n := fmt.Sprintf("%s.%s.%s", pluginPrefix, ptName, roleEntry.RoleID)
-	return &n
+func permissionTargetName(roleEntry *RoleStorageEntry, index int) string {
+	return fmt.Sprintf("%s.pt%d.%s", pluginPrefix, index, roleEntry.RoleID)
 }
 func tokenUsername(roleName string) string {
 	return fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
 }
 
-func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget, roleEntry *RoleStorageEntry) {
+func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget, groupName, ptName string) {
 
 	if fromPt.Repo != nil {
 		groupRepo := map[string][]string{
-			groupName(roleEntry): fromPt.Repo.Operations,
+			groupName: fromPt.Repo.Operations,
 		}
 		p := &v2.Permission{
 			IncludePatterns: &fromPt.Repo.IncludePatterns,
@@ -41,7 +40,7 @@ func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget
 	if fromPt.Build != nil {
 
 		groupBuild := map[string][]string{
-			groupName(roleEntry): fromPt.Build.Operations,
+			groupName: fromPt.Build.Operations,
 		}
 		p := &v2.Permission{
 			IncludePatterns: &fromPt.Build.IncludePatterns,
@@ -52,7 +51,7 @@ func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget
 		toPt.Build = p
 	}
 
-	toPt.Name = &fromPt.Name
+	toPt.Name = &ptName
 }
 
 // validate user supplied permission target

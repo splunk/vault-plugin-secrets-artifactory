@@ -20,10 +20,10 @@ func (ac *mockArtifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) (*
 func (ac *mockArtifactoryClient) DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
 	return nil, nil, nil
 }
-func (ac *mockArtifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+func (ac *mockArtifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error) {
 	return nil, nil
 }
-func (ac *mockArtifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget) (*http.Response, error) {
+func (ac *mockArtifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error) {
 	return nil, nil
 }
 func (ac *mockArtifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
