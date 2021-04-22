@@ -65,3 +65,6 @@ export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
 popd &>/dev/null
 
 "$DIR/setup_dev_vault.sh" >&2
+
+echo -e "\nExample usage to test plugin:" >&2
+echo -e "\n\033[0;32mvault write artifactory/roles/role1 token_ttl=600 permission_targets=@scripts/sample_permission_targets.json\033[0m\n" >&2

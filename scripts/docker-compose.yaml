@@ -33,6 +33,6 @@ services:
       #SKIP_SETCAP: 1
     volumes:
       - ../plugins:/vault/plugins
-      - ./vault-config.hcl:/vault/config
+      # - ./vault-config.hcl:/vault/config
     #cap_add:
     #  - IPC_LOCK
