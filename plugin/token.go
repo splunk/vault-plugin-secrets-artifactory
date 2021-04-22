@@ -25,12 +25,7 @@ func (backend *ArtifactoryBackend) createTokenEntry(ctx context.Context, storage
 		return nil, fmt.Errorf("failed to obtain artifactory client: %v", err)
 	}
 
-	// ac, err := backend.getArtifactoryClient(ctx, storage)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to obtain artifactory client: %v", err)
-	// }
-
-	token, _, err := ac.CreateToken(createEntry, roleEntry)
+	token, err := ac.CreateToken(createEntry, roleEntry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain a token: %v", err)
 	}

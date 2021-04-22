@@ -3,24 +3,25 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"strings"
 
-	"github.com/atlassian/go-artifactory/v2/artifactory"
-	"github.com/atlassian/go-artifactory/v2/artifactory/transport"
-	v1 "github.com/atlassian/go-artifactory/v2/artifactory/v1"
-	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
+	"github.com/jfrog/jfrog-client-go/artifactory"
+	"github.com/jfrog/jfrog-client-go/artifactory/auth"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
+	artconfig "github.com/jfrog/jfrog-client-go/config"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type Client interface {
-	CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error)
-	DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error)
-	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error)
-	DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error)
-	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error)
+	CreateOrReplaceGroup(role *RoleStorageEntry) error
+	DeleteGroup(role *RoleStorageEntry) error
+	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error
+	DeletePermissionTarget(ptName string) error
+	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error)
 }
 
 type artifactoryClient struct {
-	client  *artifactory.Artifactory
+	client  artifactory.ArtifactoryServicesManager
 	context context.Context
 }
 
@@ -35,90 +36,114 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 		context: ctx,
 	}
 
-	c := &http.Client{} //nolint:ineffassign,staticcheck
+	// TODO: need to figure out
+	log.SetLogger(log.NewLogger(log.INFO, nil))
+
+	artifactoryDetails := auth.NewArtifactoryDetails()
+	artifactoryDetails.SetUrl(config.BaseURL)
+
 	if config.BearerToken != "" {
-		tp := transport.AccessTokenAuth{
-			AccessToken: config.BearerToken,
-		}
-		c = tp.Client()
+		artifactoryDetails.SetAccessToken(config.BearerToken)
 	} else if config.ApiKey != "" {
-		tp := transport.ApiKeyAuth{
-			ApiKey: config.ApiKey,
-		}
-		c = tp.Client()
+		artifactoryDetails.SetApiKey(config.ApiKey)
 	} else if config.Username != "" && config.Password != "" {
-		tp := transport.BasicAuth{
-			Username: config.Username,
-			Password: config.Password,
-		}
-		c = tp.Client()
+		artifactoryDetails.SetUser(config.Username)
+		artifactoryDetails.SetPassword(config.Password)
 	} else {
 		return ac, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
 	}
 
-	client, err := artifactory.NewClient(config.BaseURL, c)
+	artifactoryServiceConfig, err := artconfig.NewConfigBuilder().
+		SetServiceDetails(artifactoryDetails).
+		// SetDryRun(false).
+		// SetContext(ctx).
+		SetThreads(1).
+		Build()
 	if err != nil {
-		return ac, err
+		return nil, fmt.Errorf("failed to build artifactory service config - %v", err.Error())
 	}
 
+	client, err := artifactory.New(artifactoryServiceConfig)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to build artifactory client- %v", err.Error())
+	}
 	ac.client = client
 
 	return ac, nil
 
 }
 
-func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error) {
-	name := groupName(role)
-	desc := fmt.Sprintf("vault plugin group for %s", role.Name)
-	group := v1.Group{
-		Name:        &name,
-		Description: &desc,
+func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
+	params := services.GroupParams{
+		GroupDetails: services.Group{
+			Name: groupName(role),
+		},
 	}
 
-	return ac.client.V1.Security.CreateOrReplaceGroup(ac.context, name, &group)
-}
-
-func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
-	return ac.client.V1.Security.DeleteGroup(ac.context, groupName(role))
-}
-
-func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error) {
-	cpt := &v2.PermissionTarget{}
-	convertPermissionTarget(pt, cpt, groupName(role), ptName)
-
-	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, *cpt.Name)
+	group, err := ac.client.GetGroup(params)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Error fetching a group '%s' - %s", groupName(role), err)
 	}
-
-	if exist {
-		return ac.client.V2.Security.UpdatePermissionTarget(ac.context, *cpt.Name, cpt)
+	if group != nil {
+		params.ReplaceIfExists = true
+		params.GroupDetails = *group
+		return ac.client.UpdateGroup(params)
 	}
-	return ac.client.V2.Security.CreatePermissionTarget(ac.context, *cpt.Name, cpt)
+	params.GroupDetails.Description = fmt.Sprintf("vault plugin group for %s", role.Name)
+	params.GroupDetails.AutoJoin = false
+	params.GroupDetails.AdminPrivileges = false
+	return ac.client.CreateGroup(params)
 }
 
-func (ac *artifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error) {
-	exist, err := ac.client.V2.Security.HasPermissionTarget(ac.context, ptName)
-	if err != nil {
-		return nil, err
-	}
-	if exist {
-		return ac.client.V2.Security.DeletePermissionTarget(ac.context, ptName)
-	}
-	return nil, nil
+func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) error {
+	return ac.client.DeleteGroup(groupName(role))
 }
 
-func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
+func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error {
+	// params, err := ac.client.GetPermissionTarget(ptName)
+	// if ignoreNotFound(err) != nil {
+	// 	return err
+	// }
 
-	u := tokenUsername(role.Name)
-	ttlInSecond := int(tokenReq.TTL.Seconds())
-	scope := fmt.Sprintf("member-of-groups:%s", groupName(role))
-	acOpt := v1.AccessTokenOptions{
-		Username:  &u,
-		ExpiresIn: &ttlInSecond,
-		Scope:     &scope,
+	// if params != nil {
+	// 	// update logic
+	// }
+	// return ac.client.CreatePermissionTarget(*params)
+	params := services.PermissionTargetParams{}
+	convertPermissionTarget(pt, &params, groupName(role), ptName)
+
+	return ac.client.UpdatePermissionTarget(params)
+}
+
+func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
+	params, err := ac.client.GetPermissionTarget(ptName)
+	if ignoreNotFound(err) != nil {
+		return err
+	}
+	if params != nil {
+		return ac.client.DeletePermissionTarget(params.Name)
+	}
+	return nil
+}
+
+func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error) {
+	params := services.CreateTokenParams{
+		Scope:     fmt.Sprintf("api:* member-of-groups:%s", groupName(role)),
+		Username:  tokenUsername(role.Name),
+		ExpiresIn: int(tokenReq.TTL.Seconds()),
 	}
 
-	return ac.client.V1.Security.CreateToken(ac.context, &acOpt)
+	return ac.client.CreateToken(params)
+}
 
+// This is temporary until Get Permission Target API returns nil err in case NotFound
+// https://github.com/jfrog/jfrog-client-go/pull/337
+func ignoreNotFound(err error) error {
+	// API error in case status is not 200 OK
+	// "Artifactory response: " + resp.Status + "yadayadaya"
+	notFoundStatus := 404
+	if strings.Contains(err.Error(), fmt.Sprintf("Artifactory response: %d", notFoundStatus)) {
+		return nil
+	}
+	return err
 }

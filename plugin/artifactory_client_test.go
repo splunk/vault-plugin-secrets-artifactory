@@ -1,9 +1,7 @@
 package artifactorysecrets
 
 import (
-	"net/http"
-
-	v1 "github.com/atlassian/go-artifactory/v2/artifactory/v1"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
 )
 
 type mockArtifactoryClient struct {
@@ -13,19 +11,19 @@ type mockArtifactoryClient struct {
 
 var _ Client = &mockArtifactoryClient{}
 
-func (ac *mockArtifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) (*http.Response, error) {
-	return nil, nil
+func (ac *mockArtifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
+	return nil
 }
 
-func (ac *mockArtifactoryClient) DeleteGroup(role *RoleStorageEntry) (*string, *http.Response, error) {
-	return nil, nil, nil
+func (ac *mockArtifactoryClient) DeleteGroup(role *RoleStorageEntry) error {
+	return nil
 }
-func (ac *mockArtifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) (*http.Response, error) {
-	return nil, nil
+func (ac *mockArtifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error {
+	return nil
 }
-func (ac *mockArtifactoryClient) DeletePermissionTarget(role *RoleStorageEntry, ptName string) (*http.Response, error) {
-	return nil, nil
+func (ac *mockArtifactoryClient) DeletePermissionTarget(ptName string) error {
+	return nil
 }
-func (ac *mockArtifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (*v1.AccessToken, *http.Response, error) {
-	return nil, nil, nil
+func (ac *mockArtifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error) {
+	return services.CreateTokenResponseData{}, nil
 }

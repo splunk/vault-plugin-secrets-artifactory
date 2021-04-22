@@ -27,7 +27,7 @@ func TestConfig(t *testing.T) {
 		testConfigUpdate(t, b, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example",
+			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(600),
 		}
 
@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, b, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example",
+			"base_url": "https://example.jfrog.io/example/",
 			"api_eky":  "myapikey",
 			"max_ttl":  "300s",
 		}
@@ -56,7 +56,7 @@ func TestConfig(t *testing.T) {
 		testConfigUpdate(t, b, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example",
+			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(300),
 		}
 
@@ -80,7 +80,7 @@ func TestConfig(t *testing.T) {
 		testConfigUpdate(t, b, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example",
+			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(3600),
 		}
 
