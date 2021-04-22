@@ -16,15 +16,8 @@ lint: .tools/golangci-lint
 test:
 	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
-#.PHONY: test-integration
-#test-integration: TOOLS_IMAGE=$(shell cd $(TEST_APP_PATH) && cat bundle.yaml | grep toolsImage | awk -F: '{print $$2 ":" $$3}')
-#test-integration:
-#	./.maybe-pull-images.sh $(TOOLS_IMAGE)
-#	.tools/kind --name $(KIND_CLUSTER_NAME) load docker-image $(TOOLS_IMAGE)
-#	(export PATH="$${PWD}/.tools:$(PATH)" && eval $$(./.make-admin-token.sh) && go test -v ./integration/ -tags integration)
-
-test-acc: dev-env
-	go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
+integration-test: dev
+# go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 report: .tools/gocover-cobertura
 	go tool cover -html=coverage.out -o coverage.html

@@ -15,16 +15,13 @@ docker-compose up -d >&2
 wait_for vault >&2
 wait_for artifactory >&2
 
-
 ARTIFACTORY_URL="http://localhost:8081/artifactory"
 export ARTIFACTORY_USER="admin";
 export ARTIFACTORY_PASSWORD="password"
 export ARTIFACTORY_BEARER_TOKEN=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ARTIFACTORY_URL}/api/security/token" -d "username=$ARTIFACTORY_USER" -d 'expires_in=0' -d 'scope=member-of-groups:*' | jq -r .access_token)
-# export ARTIFACTORY_BEARER_TOKEN=$(curl -s -uadmin:$password -XPOST 'http://localhost:8081/artifactory/api/security/token' -d 'username=admin' -d 'expires_in=0' -d 'scope=member-of-groups:*' | jq -r .access_token)
-# export ARTIFACTORY_BEARER_TOKEN=$(docker-compose exec artifactory cat var/etc/artifactory/security/access/access.admin.token)
 auth="Bearer $ARTIFACTORY_BEARER_TOKEN"
 
-# install license key for Artifactory Pro (needed for creating groups/permission targets through API)
+# install license key for Artifactory Pro (required to enable all API endpoints)
 installed=$(curl -sSH "Authorization: $auth" "${ARTIFACTORY_URL}/api/system/licenses")
 
 if [ -n "$installed" ]; then
@@ -34,7 +31,6 @@ if [ -n "$installed" ]; then
 else
   : "${ARTIFACTORY_LICENSE_KEY:?unset}"
   payload=$(jq -n --arg lk "$ARTIFACTORY_LICENSE_KEY" '{licenseKey: $lk}')
-  # curl -XPOST -H 'Content-type: application/json' -uadmin:password "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" >&2
   curl -XPOST -H "Authorization: $auth" -H 'Content-type: application/json' "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" >&2
 fi
 
@@ -67,4 +63,4 @@ popd &>/dev/null
 "$DIR/setup_dev_vault.sh" >&2
 
 echo -e "\nExample usage to test plugin:" >&2
-echo -e "\n\033[0;32mvault write artifactory/roles/role1 token_ttl=600 permission_targets=@scripts/sample_permission_targets.json\033[0m\n" >&2
+echo -e "\033[0;32mvault write artifactory/roles/role1 token_ttl=600 permission_targets=@scripts/sample_permission_targets.json\033[0m\n" >&2
