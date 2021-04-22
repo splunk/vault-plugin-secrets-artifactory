@@ -46,6 +46,7 @@ fi
 # curl -XPOST -H 'Content-type: application/json' -uadmin:password "${ARTIFACTORY_URL}/api/security/users/authorization/changePassword" -d "$payload" >&2
 
 export VAULT_ADDR="http://localhost:8200"
+export VAULT_TOKEN=root
 
 # eval output for local use
 echo -e "\n\033[1;33mCopy/paste or eval this script:\033[0m\n" >&2
