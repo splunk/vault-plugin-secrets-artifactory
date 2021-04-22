@@ -66,4 +66,4 @@ tools: .tools/docker-compose .tools/gocover-cobertura .tools/golangci-lint .tool
 	curl -o .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
 	(cd .tools && unzip vault.zip && rm vault.zip)
 
-.PHONY: all get build lint test report vault-only dev tools
+.PHONY: all get build lint test integration-test report vault-only dev tools
