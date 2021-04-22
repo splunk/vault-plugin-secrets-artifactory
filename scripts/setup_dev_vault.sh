@@ -2,7 +2,7 @@
 
 : "${ARTIFACTORY_URL:?unset}"
 
-vault secrets enable -path=artifactory vault-artifactory-secrets-plugin
+vault secrets enable -path=artifactory vault-artifactory-secrets-plugin || true
 
 if [ -z "$ARTIFACTORY_BEARER_TOKEN" ]; then
   echo "ARTIFACTORY_BEARER_TOKEN unset, using username/password"

@@ -34,8 +34,8 @@ vault-only:
 	vault server -log-level=debug -dev -dev-root-token-id=root -dev-plugin-dir=./plugins
 
 dev: tools
-	@$(MAKE) build GOOS=linux GOARCH=amd64
-	@./scripts/dev-init.sh
+	@GOOS=linux GOARCH=amd64 go build -o plugins/$(NAME)
+	@./scripts/init_dev.sh
 
 clean-dev:
 	@cd scripts && docker-compose down

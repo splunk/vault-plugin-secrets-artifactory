@@ -14,6 +14,8 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
   - [Update Permission Targets](#update-permission-targets)
   - [Garbage Collection](#garbage-collection)
 - [Development](#development)
+  - [Full dev environment](#full-dev-environment)
+  - [Developing with an existing Artifactory instance](#developing-with-an-existing-artifactory-instance)
   - [Tests](#tests)
 - [Roadmap](#roadmap)
 
@@ -21,6 +23,8 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 
 - Go: 1.6 or above
 - **Artifactory: 6.6.0** or above for API V2 support.
+- **Artifactory Pro or above is required** for the [API endpoints][artifactory-api-ref] used by
+  this plugin. A license key will be needed to spin up the full dev environment.
 - token with admin privileges to manage groups and permission targets and to create tokens
 
 ## Getting Started
@@ -117,25 +121,44 @@ roles. To this nature, it collects garbage when update/delete operation is perfo
 
 ## Development
 
+### Full dev environment
+
+This will spin up an Artifactory Pro instance and Vault server in dev mode with the plugin
+configured:
+
+Requirements:
+
+- docker
+
+```sh
+export ARTIFACTORY_LICENSE_KEY="<licenseKey>"
+make dev
+
+# or do this to capture capture Artifactory/Vault env vars:
+make tools
+eval $(make dev)
+```
+
+### Developing with an existing Artifactory instance
+
 Requirements:
 
 - vault
 
 ```sh
 # Build binary in plugins directory
-$ make build
+make build
 
-# Start vault dev server
-$ make dev-server
+# Start a standalone vault dev server
+make dev-server
 
 # New terminal
-$ export VAULT_ADDR=https://127.0.0.1:8200
-$ export VAULT_TOKEN=root
-$ export ARTIFACTORY_URL="https://artifactory.example.com/artifactory"
-$ export BEARER_TOKEN=TOKEN
+export VAULT_ADDR=https://127.0.0.1:8200
+export ARTIFACTORY_URL="https://artifactory.example.com/artifactory"
+export ARTIFACTORY_BEARER_TOKEN=TOKEN
 
 # enable secrets backend and configuration
-$ ./scripts/setup_dev_vault.sh
+./scripts/setup_dev_vault.sh
 
 ```
 
@@ -166,6 +189,7 @@ with a static credential.
 
 Merge requests, issues and comments are always welcome.
 
+[artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#
 [permission-target-format]:https://www.jfrog.com/confluence/display/JFROG/Security+Configuration+JSON#SecurityConfigurationJSON-application/vnd.org.jfrog.artifactory.security.PermissionTargetV2+json
 [vault-artifactory-token-plugin]: 
