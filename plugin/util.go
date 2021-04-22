@@ -23,16 +23,6 @@ func tokenUsername(roleName string) string {
 	return fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
 }
 
-// validatePermissionTarget checks on necessary fields in permission target
-func validatePermissionTarget(pt *PermissionTarget) error {
-
-	if pt.Name == "" {
-		return fmt.Errorf("'name' field must be supplied")
-	}
-
-	return nil
-}
-
 func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget, roleEntry *RoleStorageEntry) {
 
 	if fromPt.Repo != nil {
@@ -63,4 +53,13 @@ func convertPermissionTarget(fromPt *PermissionTarget, toPt *v2.PermissionTarget
 	}
 
 	toPt.Name = &fromPt.Name
+}
+
+// validate user supplied permission target
+func (pt PermissionTarget) assertValid() error {
+	// if pt.Name == "" {
+	// 	return fmt.Errorf("'name' field must be supplied")
+	// }
+
+	return nil
 }

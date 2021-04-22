@@ -2,7 +2,7 @@
 
 The Artifactory Vault secrets engine dynamically generates artifactory access token based on permission targets. This enables users to gain access to Artifactory repositories without needing to create or manage a dedicated service account.  
 
-## Design Principals
+## Design Principles
 
 This plugin is influenced by [Google Cloud Secrets Engine](https://www.vaultproject.io/docs/secrets/gcp)
 

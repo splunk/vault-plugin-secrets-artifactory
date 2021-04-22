@@ -170,14 +170,18 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 			return logical.ErrorResponse("Error unmarshal permission targets. Expecting list of permission targets - " + err.Error()), err
 		}
 
+		// validate for all permission targets before creating and saving
+		for _, pt := range newPts {
+			err := pt.assertValid()
+			if err != nil {
+				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
+			}
+		}
+
 		existingPts := role.PermissionTargets
 		role.PermissionTargets = newPts
 
 		for _, pt := range newPts {
-			err := validatePermissionTarget(&pt)
-			if err != nil {
-				return logical.ErrorResponse("Failed to validate a permission target: " + err.Error()), err
-			}
 			if _, err := ac.CreateOrUpdatePermissionTarget(role, &pt); err != nil {
 				return logical.ErrorResponse("Failed to create/update a permission target: ", pt.Name, err.Error()), err
 			}
@@ -185,6 +189,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 
 		// garbage collect: delete removed permission targets
 		// naive solution
+		// This will be replaced with WAL rollback.
 	OUTER:
 		for _, existingPt := range existingPts {
 			for _, newPt := range newPts {
