@@ -63,14 +63,14 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 	if err != nil {
 		return logical.ErrorResponse("failed to obtain artifactory client"), err
 	}
-	if _, _, err = ac.DeleteGroup(role); err != nil {
+	if err = ac.DeleteGroup(role); err != nil {
 		return nil, err
 	}
 
 	// Delete all permission targets
 	for idx := range role.PermissionTargets {
 		ptName := permissionTargetName(role, idx)
-		if _, err := ac.DeletePermissionTarget(role, ptName); err != nil {
+		if err := ac.DeletePermissionTarget(ptName); err != nil {
 			return logical.ErrorResponse("failed to delete a permission target: ", ptName), err
 		}
 	}
@@ -144,7 +144,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.RoleID = roleID.String()
 		role.Name = roleName
 
-		if _, err := ac.CreateOrReplaceGroup(role); err != nil {
+		if err := ac.CreateOrReplaceGroup(role); err != nil {
 			return logical.ErrorResponse("failed to create an artifactory group - ", err.Error()), err
 		}
 	}
@@ -160,7 +160,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
-	// TODO: garbage collection
+	// TODO: garbage collection - rollback operation
 	//  - delete group if there's any error while creating a new permission target for a 'new' role
 	//  - delete any newly created permission targets if role isn't saved
 	if ptsRaw, ok := data.GetOk("permission_targets"); ok {
@@ -185,7 +185,7 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 
 		for idx, pt := range newPts {
 			ptName := permissionTargetName(role, idx)
-			if _, err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
+			if err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
 				return logical.ErrorResponse("Failed to create/update a permission target - ", err.Error()), err
 			}
 		}
@@ -196,7 +196,8 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		if len(existingPts) > len(newPts) {
 			for idx := range existingPts[len(newPts):] {
 				ptName := permissionTargetName(role, idx)
-				if _, err := ac.DeletePermissionTarget(role, ptName); err != nil {
+				backend.Logger().Info("Deleting permission target from artifactory", "name", ptName)
+				if err := ac.DeletePermissionTarget(ptName); err != nil {
 					return logical.ErrorResponse("failed to delete a permission target - ", err.Error()), err
 				}
 			}

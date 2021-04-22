@@ -5,45 +5,97 @@ import (
 	"strings"
 	"testing"
 
-	v2 "github.com/atlassian/go-artifactory/v2/artifactory/v2"
+	"github.com/hashicorp/go-multierror"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
 )
 
 func TestValidatePermissionTarget(t *testing.T) {
-	repo := &Permission{
-		Repositories: []string{repo},
-	}
+
 	t.Skip("skip until reimplementing validate method")
 	t.Parallel()
 
-	t.Run("nil_name", func(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
 		t.Parallel()
-		nilPtName := PermissionTarget{
-			Repo: repo,
+
+		perm := &Permission{
+			Repositories: []string{"repo"},
+			Operations:   []string{"read", "write", "annotate"},
 		}
-		err := nilPtName.assertValid()
+
+		pt := PermissionTarget{
+			Repo: perm,
+		}
+
+		if err := pt.assertValid(); err != nil {
+			t.Fatalf("not expecting error. err: %s", err.Error())
+		}
+	})
+
+	t.Run("emtpy_repo_repositories", func(t *testing.T) {
+		t.Parallel()
+		perm := &Permission{
+			Operations: []string{"read", "write", "annotate"},
+		}
+		pt := PermissionTarget{
+			Repo: perm,
+		}
+		err := pt.assertValid()
 		if err == nil {
 			t.Fatalf("expected error")
 		}
-		if exp, act := "'name' field must be supplied", err.Error(); !strings.EqualFold(act, exp) {
+		if exp, act := "'repo.repositories' field must be supplied", err.Error(); !strings.Contains(act, exp) {
 			t.Errorf("expected %q to match %q", act, exp)
 		}
 	})
 
-	t.Run("empty_name", func(t *testing.T) {
+	t.Run("emtpy_repo_opeartions", func(t *testing.T) {
 		t.Parallel()
-
-		emptyPtName := PermissionTarget{
-			Repo: repo,
+		perm := &Permission{
+			Repositories: []string{"repo"},
 		}
-		err := emptyPtName.assertValid()
+		pt := PermissionTarget{
+			Repo: perm,
+		}
+		err := pt.assertValid()
 		if err == nil {
 			t.Fatalf("expected error")
 		}
-		if exp, act := "'name' field must be supplied", err.Error(); !strings.EqualFold(act, exp) {
+		if exp, act := "'repo.operations' field must be supplied", err.Error(); !strings.Contains(act, exp) {
 			t.Errorf("expected %q to match %q", act, exp)
 		}
 	})
+}
 
+func TestValidateOperations(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid_operations", func(t *testing.T) {
+		t.Parallel()
+
+		validOps := []string{"read", "write", "annotate", "delete", "manage", "managedXrayMeta", "distribute"}
+		err := validateOperations(validOps)
+
+		if err != nil {
+			t.Fatalf("not expecting error. err: %s", err.Error())
+		}
+	})
+
+	t.Run("invalid_operations", func(t *testing.T) {
+		t.Parallel()
+
+		invalidOps := []string{"hello", "world", "read"}
+		err := validateOperations(invalidOps)
+
+		if err == nil {
+			t.Fatalf("expecting error")
+		}
+
+		if merr, ok := err.(*multierror.Error); ok {
+			if len(merr.Errors) != 2 {
+				t.Errorf("expecting %d errors, got %d", 2, len(merr.Errors))
+			}
+		}
+	})
 }
 
 func TestConvertPermissionTarget(t *testing.T) {
@@ -63,18 +115,18 @@ func TestConvertPermissionTarget(t *testing.T) {
 				Operations:   []string{"read", "write"},
 			},
 		}
-		cpt := &v2.PermissionTarget{}
+		cpt := &services.PermissionTargetParams{}
 		convertPermissionTarget(pt, cpt, groupName(role), "testname")
 
-		if len(*cpt.Repo.Actions.Groups) != 1 {
+		if len(cpt.Repo.Actions.Groups) != 1 {
 			t.Fatalf("incorrect number of groups")
 		}
 
-		if len((*cpt.Repo.Actions.Groups)["vault-plugin.1234567890"]) != 2 {
+		if len(cpt.Repo.Actions.Groups["vault-plugin.1234567890"]) != 2 {
 			t.Fatalf("incorrect number of operations")
 		}
 
-		if got, exp := (*cpt.Repo.Actions.Groups)["vault-plugin.1234567890"], []string{"read", "write"}; !reflect.DeepEqual(got, exp) {
+		if got, exp := cpt.Repo.Actions.Groups["vault-plugin.1234567890"], []string{"read", "write"}; !reflect.DeepEqual(got, exp) {
 			t.Fatalf("operations don't match: exp: %v, got: %v", exp, got)
 		}
 

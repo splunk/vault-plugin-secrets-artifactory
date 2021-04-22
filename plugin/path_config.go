@@ -65,8 +65,8 @@ func (backend *ArtifactoryBackend) pathConfigWrite(ctx context.Context, req *log
 	}
 
 	if baseURL, ok := data.GetOk("base_url"); ok {
-
-		cfg.BaseURL = baseURL.(string)
+		url := appendTrailingSlash(baseURL.(string))
+		cfg.BaseURL = url
 	}
 
 	if bearerToken, ok := data.GetOk("bearer_token"); ok {
