@@ -24,7 +24,7 @@ auth="Bearer $ARTIFACTORY_BEARER_TOKEN"
 # install license key for Artifactory Pro (required to enable all API endpoints)
 installed=$(curl -sSH "Authorization: $auth" "${ARTIFACTORY_URL}/api/system/licenses")
 
-if [ -n $(echo "$installed" | jq '.licensedTo') ]; then
+if [ -n "$(echo "$installed" | jq -r .licensedTo)" ]; then
   echo
   echo "License key already installed:" >&2
   echo "$installed" | jq >&2
@@ -48,15 +48,16 @@ fi
 export VAULT_ADDR="http://localhost:8200"
 export VAULT_TOKEN=root
 
-# eval output for local use
-echo -e "\n\033[1;33mCopy/paste or eval this script:\033[0m\n" >&2
-echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
-echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
-echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
-echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
-echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
-echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
-
+if [ -z "$CI" ]; then
+  # eval output for local use
+  echo -e "\n\033[1;33mCopy/paste or eval this script:\033[0m\n" >&2
+  echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
+  echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
+  echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
+  echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
+  echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
+  echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
+fi
 
 export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
 
