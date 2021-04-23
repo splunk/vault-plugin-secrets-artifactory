@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# This script serves as entrypoint to the reapplied job docker container.
+# This script serves as entrypoint to the reapplied ci job docker container.
 # see test-wrapper.sh
 
-set -euxo pipefail
+set -uo pipefail
 
-set +e
 make integration-test
 exit_code=$?
 

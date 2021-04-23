@@ -38,10 +38,12 @@ env | grep  '[A-Za-z0-9_-][A-Za-z0-9_-]*=' | grep -v '^_' |  sort | awk -F= '{ p
 # assume there is one running container and get its pid
 pid=$(docker ps -q)
 
+set +u
 if [ "$CI_DEBUG_TRACE" = true ]; then
   # display current container mounts
   docker inspect ${pid} | jq '.[].Mounts' 
 fi
+set -u
 
 # extract the image we are running from inspect output
 image=$(docker inspect ${pid} | jq -r '.[0].Image')

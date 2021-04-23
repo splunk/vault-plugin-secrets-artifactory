@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -euo pipefail
 
 export PATH=$(pwd)/.tools:$PATH
 
@@ -29,9 +29,8 @@ if [ -n "$(echo "$installed" | jq -r .licensedTo)" ]; then
   echo "License key already installed:" >&2
   echo "$installed" | jq >&2
 else
-  : "${ARTIFACTORY_LICENSE_KEY:?unset}"
   payload=$(jq -n --arg lk "$ARTIFACTORY_LICENSE_KEY" '{licenseKey: $lk}')
-  curl -XPOST -H "Authorization: $auth" -H 'Content-type: application/json' "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" >&2
+  curl -XPOST -H "Authorization: $auth" -H 'Content-type: application/json' "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" | jq .status >&2
 fi
 
 # # create a new admin user for UI use
@@ -48,6 +47,7 @@ fi
 export VAULT_ADDR="http://localhost:8200"
 export VAULT_TOKEN=root
 
+set +u
 if [ -z "$CI" ]; then
   # eval output for local use
   echo -e "\n\033[1;33mCopy/paste or eval this script:\033[0m\n" >&2
@@ -58,6 +58,7 @@ if [ -z "$CI" ]; then
   echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
   echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
 fi
+set -u
 
 export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
 
