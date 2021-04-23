@@ -1,0 +1,5 @@
+vault-plugin-secrets-artifactory
+.vscode/
+.tools/
+plugins/
+coverage.*
