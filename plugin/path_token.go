@@ -28,7 +28,6 @@ func (backend *ArtifactoryBackend) createToken(ctx context.Context, req *logical
 
 	roleName := data.Get("role_name").(string)
 
-	// get the role by name
 	roleEntry, err := backend.getRoleEntry(ctx, req.Storage, roleName)
 	if roleEntry == nil || err != nil {
 		return logical.ErrorResponse(fmt.Sprintf("Role name '%s' not recognised", roleName)), err
