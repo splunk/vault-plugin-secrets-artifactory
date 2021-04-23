@@ -30,7 +30,7 @@ var createRoleSchema = map[string]*framework.FieldSchema{
 	},
 	"permission_targets": {
 		Type:        framework.TypeString,
-		Description: "permission targets config.",
+		Description: "List of permission target configurations",
 	},
 }
 
@@ -136,9 +136,8 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 	}
 
 	if role == nil {
-		role = &RoleStorageEntry{}
 		// creating a new role
-
+		role = &RoleStorageEntry{}
 		// set the role ID
 		roleID, _ := uuid.NewUUID()
 		role.RoleID = roleID.String()
@@ -261,15 +260,33 @@ with the following format:
 
 [
 	{
-		"name": "name1",
 		"repo": {
 			"include_patterns": ["**"] (default),
 			"exclude_patterns": [""] (default),
-			"repositories": ["local-rep1", "local-rep2", "remote-rep1", "virtual-rep2"],
+			"repositories": ["local-repo1", "local-repo2", "remote-repo1", "virtual-repo2"],
+			"operations": ["read","annotate","write"]
+		},
+		"build": {
+			"include_patterns": ["**"] (default),
+			"exclude_patterns": [""] (default),
+			"repositories": ["artifactory-build-info"], (default, can't be changed)
 			"operations": ["manage","read","annotate"]
-		}
+		},
 	}
 ]
+
+| field | subfield 				 | required |
+| ----- | ---------------- | -------- |
+| repo  | N/A      				 | false    | 
+|  			| include_patterns | false    | 
+|  			| exclude_patterns | false    | 
+|  			| repositories	   | true   	| 
+|  			| operations		   | true	    | 
+| build | N/A      				 | false    | 
+|  			| include_patterns | false    | 
+|  			| exclude_patterns | false    | 
+|  			| repositories	   | true   	| 
+|  			| operations		   | true	    | 
 `
 
 const pathListRoleHelpSyn = `List existing roles.`

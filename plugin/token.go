@@ -10,8 +10,7 @@ import (
 
 // TokenCreateEntry is the structure for creating a token
 type TokenCreateEntry struct {
-	TTL  time.Duration `json:"ttl" structs:"ttl" mapstructure:"ttl"`
-	Path string        `json:"path" structs:"path" mapstructure:"path"`
+	TTL time.Duration `json:"ttl" structs:"ttl" mapstructure:"ttl"`
 }
 
 func (backend *ArtifactoryBackend) createTokenEntry(ctx context.Context, storage logical.Storage, createEntry TokenCreateEntry, roleEntry *RoleStorageEntry) (map[string]interface{}, error) {
@@ -27,7 +26,7 @@ func (backend *ArtifactoryBackend) createTokenEntry(ctx context.Context, storage
 
 	token, err := ac.CreateToken(createEntry, roleEntry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to obtain a token: %v", err)
+		return nil, fmt.Errorf("failed to create a token: %v", err)
 	}
 
 	tokenOutput := map[string]interface{}{
