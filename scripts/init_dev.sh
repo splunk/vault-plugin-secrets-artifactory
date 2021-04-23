@@ -13,7 +13,8 @@ docker-compose version >&2
 
 set +u
 if [ -n "$CI" ]; then
-  docker-compose -f docker-compose-ci.yaml up -d >&2
+  echo "Starting containers in net=host mode..."
+  docker-compose -f docker-compose-ci.yaml up -d
 else
   docker-compose up -d >&2
 fi
@@ -22,7 +23,7 @@ set -u
 wait_for vault >&2
 wait_for artifactory >&2
 
-ARTIFACTORY_URL="http://localhost:8081/artifactory"
+export ARTIFACTORY_URL="http://localhost:8081/artifactory"
 export ARTIFACTORY_USER="admin";
 export ARTIFACTORY_PASSWORD="password"
 export ARTIFACTORY_BEARER_TOKEN=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ARTIFACTORY_URL}/api/security/token" -d "username=$ARTIFACTORY_USER" -d 'expires_in=0' -d 'scope=member-of-groups:*' | jq -r .access_token)
@@ -36,8 +37,10 @@ if [ -n "$(echo "$installed" | jq -r .licensedTo)" ]; then
   echo "License key already installed:" >&2
   echo "$installed" | jq >&2
 else
+  echo "Installing Artifactory license key..." >&2
   payload=$(jq -n --arg lk "$ARTIFACTORY_LICENSE_KEY" '{licenseKey: $lk}')
-  curl -XPOST -H "Authorization: $auth" -H 'Content-type: application/json' "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" | jq .status >&2
+  echo "License key install response status:" >&2
+  curl -sS -XPOST -H "Authorization: $auth" -H 'Content-type: application/json' "${ARTIFACTORY_URL}/api/system/licenses" -d "$payload" | jq .status >&2
 fi
 
 # # create a new admin user for UI use
@@ -73,6 +76,7 @@ set -u
 
 popd &>/dev/null
 
+echo "Configuring vault..." >&2
 "$DIR/setup_dev_vault.sh" >&2
 
 echo -e "\nExample usage to test plugin:" >&2

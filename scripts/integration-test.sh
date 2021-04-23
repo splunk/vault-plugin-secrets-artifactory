@@ -5,6 +5,17 @@
 
 set -uo pipefail
 
+echo "Current directory:"
+pwd
+
+set +u
+if [ "$CI_DEBUG_TRACE" = true ]; then
+  for p in $(docker ps -q); do
+    docker inspect $p
+  done
+fi
+set -u
+
 make integration-test
 exit_code=$?
 

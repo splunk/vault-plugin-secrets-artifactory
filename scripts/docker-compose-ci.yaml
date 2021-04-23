@@ -23,8 +23,6 @@ services:
       test: wget -O- http://localhost:8200/v1/sys/health
       interval: 10s
       timeout: 3s
-    networks:
-      - dev
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: root
       VAULT_DISABLE_MLOCK: "true"
