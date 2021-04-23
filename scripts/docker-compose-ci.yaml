@@ -3,9 +3,6 @@ services:
   artifactory:
     image: releases-docker.jfrog.io/jfrog/artifactory-pro:latest
     container_name: artifactory
-    ports:
-      - 8081:8081 # artifactory REST APIs
-      - 8082:8082 # artifactory UI
     restart: always
     healthcheck:
       test: curl -sf http://localhost:8082/artifactory/api/system/ping || exit 1
@@ -16,6 +13,7 @@ services:
       nofile:
         soft: 32000
         hard: 40000
+    network_mode: "host"
   vault:
     image: vault:1.7.1
     container_name: vault
@@ -25,23 +23,11 @@ services:
       test: wget -O- http://localhost:8200/v1/sys/health
       interval: 10s
       timeout: 3s
-    ports:
-      - 8200:8200
-    # networks:
-    #   - dev
+    networks:
+      - dev
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: root
       VAULT_DISABLE_MLOCK: "true"
-      #SKIP_SETCAP: 1
     volumes:
       - ../plugins:/vault/plugins
-      # - ./vault-config.hcl:/vault/config
-    #cap_add:
-    #  - IPC_LOCK
-    # networks:
-    #   - dev
-# networks:
-#   dev:
-  # default:
-  #   external:
-  #     name: dev
+    network_mode: "host"

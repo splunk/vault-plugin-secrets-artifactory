@@ -10,7 +10,14 @@ DIR=$(dirname "$0")
 
 pushd $DIR &>/dev/null
 docker-compose version >&2
-docker-compose up -d >&2
+
+set +u
+if [ -n "$CI" ]; then
+  docker-compose -f docker-compose-ci.yaml up -d >&2
+else
+  docker-compose up -d >&2
+fi
+set -u
 
 wait_for vault >&2
 wait_for artifactory >&2
@@ -57,10 +64,12 @@ if [ -z "$CI" ]; then
   echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
   echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
   echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
+
+  # containers using net="host" in CI will all communicate via localhost
+  export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
 fi
 set -u
 
-export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
 
 popd &>/dev/null
 

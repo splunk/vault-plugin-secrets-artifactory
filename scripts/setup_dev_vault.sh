@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
 
 existing=$(vault secrets list -format json | jq -r '."artifactory/"')
 if [ "$existing" == "null" ]; then
