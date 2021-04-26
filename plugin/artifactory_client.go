@@ -139,6 +139,9 @@ func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleSt
 // This is temporary until Get Permission Target API returns nil err in case NotFound
 // https://github.com/jfrog/jfrog-client-go/pull/337
 func ignoreNotFound(err error) error {
+	if err == nil {
+		return err
+	}
 	// API error in case status is not 200 OK
 	// "Artifactory response: " + resp.Status + "yadayadaya"
 	notFoundStatus := 404

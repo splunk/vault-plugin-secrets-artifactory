@@ -20,7 +20,7 @@ test:
 	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 integration-test: tools build-linux
-	@(eval $$(./scripts/init_dev.sh) && env | grep -i artifactory && go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS))
+	@(eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS))
 
 report: .tools/gocover-cobertura
 	go tool cover -html=coverage.out -o coverage.html
