@@ -4,14 +4,29 @@ set -euo pipefail
 
 : ${ARTIFACTORY_URL:?unset}
 
+plugin=vault-artifactory-secrets-plugin
+
 existing=$(vault secrets list -format json | jq -r '."artifactory/"')
 if [ "$existing" == "null" ]; then
-  env | grep VAULT
-  pwd
 
-  ls -al plugins
-  docker inspect vault | jq '.[].Mounts' 
-  vault secrets enable -path=artifactory vault-artifactory-secrets-plugin || true
+  set +e
+  env | grep VAULT
+
+  # in CI, current container bind mount is rprivate, preventing nested bind mounts
+  # instead, copy plugin in to vault container and reload
+  if ! vault plugin list secret | grep -q artifactory; then
+    echo "Plugin missing from dev plugin dir /vault/plugins... registering manually."
+    sha=$(sha256sum plugins/$plugin | cut -d' ' -f1)
+    # if plugin is missing, it is assumed this is a CI environment and vault is running in a container
+    docker cp plugins/* vault:/vault/plugins
+    docker exec vault ls -al /vault/plugins
+    vault plugin register -sha256=$sha secret $plugin
+    vault plugin list
+  fi
+
+  vault secrets enable -path=artifactory $plugin
+  set -e
+
 else
   echo
   echo  "Plugin enabled on path 'artifactory/':"

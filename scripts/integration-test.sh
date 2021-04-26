@@ -10,9 +10,7 @@ pwd
 
 set +u
 if [ "$CI_DEBUG_TRACE" = true ]; then
-  for p in $(docker ps -q); do
-    docker inspect $p
-  done
+  docker inspect $(docker ps -q)
 fi
 set -u
 

@@ -33,7 +33,9 @@ export CREDS_SECRET_ROOT=$(pwd)/tmp
 # save only the var names and not the values which cause problems when the values have spaces.
 # according to the docker docs just supplying a name causes the value to be picked up from the
 # current environment.
+set +x
 env | grep  '[A-Za-z0-9_-][A-Za-z0-9_-]*=' | grep -v '^_' |  sort | awk -F= '{ print $1}' > tmp/vars.txt
+set -x
 
 # assume there is one running container and get its pid
 pid=$(docker ps -q)
