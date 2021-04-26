@@ -4,40 +4,38 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
 )
 
-var repo = os.Getenv("ARTIFACTORY_REPOSITORY_NAME")
-
 func TestPathRole(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test (short)")
 	}
 
-	b, storage := getTestBackend(t)
-
+	backend, storage := getTestBackend(t)
 	conf := map[string]interface{}{
 		"base_url":     os.Getenv("ARTIFACTORY_URL"),
 		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
 
-	testConfigUpdate(t, b, storage, conf)
+	testConfigUpdate(t, backend, storage, conf)
 
 	/***  TEST CREATE OPERATION ***/
 	req := &logical.Request{
 		Storage: storage,
 	}
+	var repo = envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
 
-	pt := fmt.Sprintf(`
+	rawPt := fmt.Sprintf(`
 	[
 		{
-			"name": "test",
 			"repo": {
-				"include_patterns": ["/mytest/**"] ,
+				"include_patterns": ["/mytest/**"],
 				"exclude_patterns": [""],
 				"repositories": ["%s"],
 				"operations": ["read", "write", "annotate"]
@@ -45,21 +43,19 @@ func TestPathRole(t *testing.T) {
 		}
 	]
 	`, repo)
-
-	resp, err := testRoleCreate(req, b, t, "test_role1", pt)
-
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
+	data := map[string]interface{}{
+		"permission_targets": rawPt,
 	}
 
-	resp, err = testRoleCreate(req, b, t, "test_role2", pt)
+	data["name"] = "test_role1"
+	resp, err := testRoleCreate(req, backend, t, "test_role1", data)
 
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 
 	/***  TEST GET OPERATION ***/
-	resp, err = testRoleRead(req, b, t, "test_role1")
+	resp, err = testRoleRead(req, backend, t, "test_role1")
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
@@ -74,14 +70,28 @@ func TestPathRole(t *testing.T) {
 		t.Fatalf("incorrect role name %s returned, not the same as saved value \n", returnedRole.Name)
 	}
 
+	/*** Test Update without update ***/
+	data["name"] = "test_role2"
+	resp, err = testRoleCreate(req, backend, t, "test_role2", data)
+
+	if err != nil || (resp != nil && resp.IsError()) {
+		t.Fatalf("err:%s resp:%#v\n", err, resp)
+	}
+
+	resp, err = testRoleCreate(req, backend, t, "test_role2", data)
+
+	if err != nil || (resp != nil && resp.IsError()) {
+		t.Fatalf("err:%s resp:%#v\n", err, resp)
+	}
+
 	/*** TEST GET NON-EXISTENT ROLE ***/
-	resp, err = testRoleRead(req, b, t, "test_role3")
+	resp, err = testRoleRead(req, backend, t, "test_role3")
 	if err != nil && resp != nil {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 
 	/***  TEST List OPERATION ***/
-	resp, err = testRoleList(req, b, t)
+	resp, err = testRoleList(req, backend, t)
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
@@ -103,17 +113,122 @@ func TestPathRole(t *testing.T) {
 	}
 
 	/***  TEST Delete OPERATION ***/
-	resp, err = testRoleDelete(req, b, t, "test_role1")
+	resp, err = testRoleDelete(req, backend, t, "test_role1")
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 }
 
-func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName, permissionTargets string) (*logical.Response, error) {
-	data := map[string]interface{}{
-		"name":               roleName,
-		"permission_targets": permissionTargets,
+func TestPathRoleFail(t *testing.T) {
+
+	backend, storage := getTestBackend(t)
+
+	conf := map[string]interface{}{
+		"base_url":     os.Getenv("ARTIFACTORY_URL"),
+		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
+		"max_ttl":      "600s",
 	}
+
+	testConfigUpdate(t, backend, storage, conf)
+
+	req := &logical.Request{
+		Storage: storage,
+	}
+	data := make(map[string]interface{})
+	data["name"] = "test_role1"
+
+	t.Run("no_permission_targets_for_new_role", func(t *testing.T) {
+
+		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+
+		if !resp.IsError() {
+			t.Fatal("expecting error")
+		}
+		if errmsg, exp := resp.Data["error"].(string), "permission targets are required for new role"; errmsg != exp {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+	})
+
+	t.Run("empty_permission_targets", func(t *testing.T) {
+
+		data["permission_targets"] = ""
+		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+
+		if !resp.IsError() {
+			t.Fatal("expecting error")
+		}
+		if errmsg, exp := resp.Data["error"].(string), "permission targets are empty"; errmsg != exp {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+	})
+
+	t.Run("unmarshable_permission_target", func(t *testing.T) {
+
+		data["permission_targets"] = 60
+		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+
+		if !resp.IsError() {
+			t.Fatal("expecting error")
+		}
+		if errmsg, exp := resp.Data["error"].(string), "Error unmarshal permission targets. Expecting list of permission targets"; !strings.Contains(errmsg, exp) {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+	})
+
+	t.Run("permission_target_empty_required_field", func(t *testing.T) {
+
+		rawPt := `
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""]
+				}
+			}
+		]
+		`
+		data["permission_targets"] = rawPt
+
+		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+		if !resp.IsError() {
+			t.Fatal("expecting error")
+		}
+		if errmsg, exp := resp.Data["error"].(string), "repo.repositories' field must be supplied"; !strings.Contains(errmsg, exp) {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+
+		if errmsg, exp := resp.Data["error"].(string), "repo.operations' field must be supplied"; !strings.Contains(errmsg, exp) {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+	})
+
+	t.Run("permission_target_invalid_operation", func(t *testing.T) {
+
+		rawPt := `
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"operations": ["invalidop"]
+				}
+			}
+		]
+		`
+		data["permission_targets"] = rawPt
+		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+		if !resp.IsError() {
+			t.Fatal("expecting error")
+		}
+		if errmsg, exp := resp.Data["error"].(string), "operation 'invalidop' is not allowed"; !strings.Contains(errmsg, exp) {
+			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
+		}
+	})
+
+}
+
+func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) (*logical.Response, error) {
+
 	req.Operation = logical.CreateOperation
 	req.Path = fmt.Sprintf("roles/%s", roleName)
 	req.Data = data

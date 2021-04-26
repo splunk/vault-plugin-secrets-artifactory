@@ -14,38 +14,41 @@ func TestIssueToken(t *testing.T) {
 		t.Skip("skipping integration test (short)")
 	}
 
-	b, storage := getTestBackend(t)
+	backend, storage := getTestBackend(t)
 
 	conf := map[string]interface{}{
 		"base_url":     os.Getenv("ARTIFACTORY_URL"),
 		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
-	testConfigUpdate(t, b, storage, conf)
+	testConfigUpdate(t, backend, storage, conf)
+	var repo = envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
 
 	req := &logical.Request{
 		Storage: storage,
 	}
 	roleName := "test_role"
-	pt := fmt.Sprintf(`
-	[
-		{
-			"name": "test",
-			"repo": {
-				"include_patterns": ["/mytest/**"] ,
-				"exclude_patterns": [""],
-				"repositories": ["%s"],
-				"operations": ["read", "write", "annotate"]
+	data := map[string]interface{}{
+		"name": roleName,
+		"permission_targets": fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"] ,
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["read", "write", "annotate"]
+				}
 			}
-		}
-	]
-	`, repo)
-	resp, err := testRoleCreate(req, b, t, roleName, pt)
+		]
+		`, repo),
+	}
+	resp, err := testRoleCreate(req, backend, t, roleName, data)
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}
 
-	resp, err = testIssueToken(req, b, t, roleName)
+	resp, err = testIssueToken(req, backend, t, roleName)
 	if err != nil || (resp != nil && resp.IsError()) {
 		t.Fatalf("err:%s resp:%#v\n", err, resp)
 	}

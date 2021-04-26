@@ -14,9 +14,9 @@ func TestConfig(t *testing.T) {
 	t.Run("bearer_token", func(t *testing.T) {
 		t.Parallel()
 
-		b, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t)
 
-		testConfigRead(t, b, reqStorage, nil)
+		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
 			"base_url":     "https://example.jfrog.io/example",
@@ -24,28 +24,28 @@ func TestConfig(t *testing.T) {
 			"max_ttl":      "600s",
 		}
 
-		testConfigUpdate(t, b, reqStorage, conf)
+		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
 			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(600),
 		}
 
-		testConfigRead(t, b, reqStorage, expected)
-		testConfigUpdate(t, b, reqStorage, map[string]interface{}{
+		testConfigRead(t, backend, reqStorage, expected)
+		testConfigUpdate(t, backend, reqStorage, map[string]interface{}{
 			"max_ttl": "50s",
 		})
 
 		expected["max_ttl"] = int64(50)
-		testConfigRead(t, b, reqStorage, expected)
+		testConfigRead(t, backend, reqStorage, expected)
 	})
 
 	t.Run("api_key", func(t *testing.T) {
 		t.Parallel()
 
-		b, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t)
 
-		testConfigRead(t, b, reqStorage, nil)
+		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
 			"base_url": "https://example.jfrog.io/example/",
@@ -53,22 +53,22 @@ func TestConfig(t *testing.T) {
 			"max_ttl":  "300s",
 		}
 
-		testConfigUpdate(t, b, reqStorage, conf)
+		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
 			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(300),
 		}
 
-		testConfigRead(t, b, reqStorage, expected)
+		testConfigRead(t, backend, reqStorage, expected)
 	})
 
 	t.Run("user_pwd", func(t *testing.T) {
 		t.Parallel()
 
-		b, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t)
 
-		testConfigRead(t, b, reqStorage, nil)
+		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
 			"base_url": "https://example.jfrog.io/example",
@@ -77,14 +77,14 @@ func TestConfig(t *testing.T) {
 			"max_ttl":  "1h",
 		}
 
-		testConfigUpdate(t, b, reqStorage, conf)
+		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
 			"base_url": "https://example.jfrog.io/example/",
 			"max_ttl":  int64(3600),
 		}
 
-		testConfigRead(t, b, reqStorage, expected)
+		testConfigRead(t, backend, reqStorage, expected)
 	})
 }
 

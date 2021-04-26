@@ -66,7 +66,9 @@ role as `role_id` and appends it to the group and permission target names:
 | Artifactory Object | format                                                                | example                                             |
 | ------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
 | Group              | `vault-plugin.<role_id>`                                              | `vault-plugin.9ace47f6-a205-11eb-8b68-acde48001122` |
-| Permission Target  | `vault-plugin.pt<index of permission target counts>.<role_id>` | `npm-test.9ace47f6-a205-11eb-8b68-acde48001122`     |
+| Permission Target  | `vault-plugin.pt<index of permission target counts>.<role_name>` | `npm-test.pt0.ci-role`     |
+
+Group name uses UUID as it's bounded to max 64 chars DB limit, whereas permission target name can be longer than that  
 
 Token is generated with a transient user and returned as key value pair:
 
@@ -82,24 +84,28 @@ username follows the format of `auto-vault-plugin-user.<role_name>`
 List of permission targets can be supplied as a JSON string. Format of a permission target can be
 found [here][permission-target-format].
 
-To apply a dynamically created group to permission targets, you must use `VAULT_PLUGIN_OWN_ROLE`
-as group name permission target group key. For example:
-
 ```json
 [
   {
-    "name": "docker",
     "repo": {
-      "include_patterns": ["/myprefix/**", "/anotherprefix/myteam/**"] ,
+      "include_patterns": ["/myprefix/**", "/myteam/anotherprefix/**"] ,
       "exclude_patterns": [""],
       "repositories": ["docker-local"],
+      "operations": ["read"]
+    }
+  },
+  {
+    "build": {
+      "include_patterns": [""] ,
+      "exclude_patterns": [""],
+      "repositories": ["artifactory-build-info"],
       "operations": ["read"]
     }
   },
 ]
 ```
 
-You have notified that `actions` from V2 permission target are swapped with `operations`. This is
+You have noticed that `actions` from V2 permission target are swapped with `operations`. This is
 because the `actions` field can contain users and other groups which are obsolete in this plugin.
 
 To update permission targets for an existing role, please also supply existing permission

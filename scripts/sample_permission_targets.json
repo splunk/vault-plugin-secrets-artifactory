@@ -3,7 +3,7 @@
     "repo": {
       "include_patterns": ["/mydocker2/**", "/newpath/prefix/**"] ,
       "exclude_patterns": [""],
-      "repositories": ["docker-test-west-local", "docker-test-east-local"],
+      "repositories": ["npm-test-west-local", "npm-test-east-local"],
       "operations": ["read", "write", "annotate"]
     }
   },

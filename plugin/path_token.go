@@ -24,11 +24,12 @@ var createTokenSchema = map[string]*framework.FieldSchema{
 }
 
 // create the basic jwt token with an expiry within the claim
-func (backend *ArtifactoryBackend) createToken(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (backend *ArtifactoryBackend) pathTokenCreateUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 
 	roleName := data.Get("role_name").(string)
 
-	roleEntry, err := backend.getRoleEntry(ctx, req.Storage, roleName)
+	// get the role by name
+	roleEntry, err := getRoleEntry(ctx, req.Storage, roleName)
 	if roleEntry == nil || err != nil {
 		return logical.ErrorResponse(fmt.Sprintf("Role name '%s' not recognised", roleName)), err
 	}
@@ -59,8 +60,8 @@ func pathToken(backend *ArtifactoryBackend) []*framework.Path {
 			Pattern: fmt.Sprintf("token/%s", framework.GenericNameRegex("role_name")),
 			Fields:  createTokenSchema,
 			Callbacks: map[logical.Operation]framework.OperationFunc{
-				logical.CreateOperation: backend.createToken,
-				logical.UpdateOperation: backend.createToken,
+				logical.CreateOperation: backend.pathTokenCreateUpdate,
+				logical.UpdateOperation: backend.pathTokenCreateUpdate,
 			},
 			HelpSynopsis:    pathTokenHelpSyn,
 			HelpDescription: pathTokenHelpDesc,

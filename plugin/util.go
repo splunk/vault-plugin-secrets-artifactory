@@ -1,7 +1,8 @@
 package artifactorysecrets
 
 import (
-	"errors"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -18,8 +19,8 @@ func groupName(roleEntry *RoleStorageEntry) string {
 	return fmt.Sprintf("%s.%s", pluginPrefix, roleEntry.RoleID)
 }
 
-func permissionTargetName(roleEntry *RoleStorageEntry, index int) string {
-	return fmt.Sprintf("%s.pt%d.%s", pluginPrefix, index, roleEntry.RoleID)
+func permissionTargetName(roleName string, index int) string {
+	return fmt.Sprintf("%s.pt%d.%s", pluginPrefix, index, roleName)
 }
 
 func tokenUsername(roleName string) string {
@@ -67,34 +68,6 @@ func convertPermissionTarget(fromPt *PermissionTarget, toPt *services.Permission
 	toPt.Name = ptName
 }
 
-// validate user supplied permission target
-func (pt PermissionTarget) assertValid() error {
-	var err *multierror.Error
-
-	if pt.Repo != nil {
-		if len(pt.Repo.Repositories) == 0 {
-			err = multierror.Append(err, errors.New("'repo.repositories' field must be supplied"))
-		}
-		if len(pt.Repo.Operations) == 0 {
-			err = multierror.Append(err, errors.New("'repo.operations' field must be supplied"))
-		} else if e := validateOperations(pt.Repo.Operations); e != nil {
-			err = multierror.Append(err, e)
-		}
-	}
-
-	if pt.Build != nil {
-		if len(pt.Build.Repositories) == 0 {
-			err = multierror.Append(err, errors.New("'build.repositories' field must be supplied"))
-		}
-		if len(pt.Build.Operations) == 0 {
-			err = multierror.Append(err, errors.New("'build.operations' field must be supplied"))
-		} else if e := validateOperations(pt.Build.Operations); e != nil {
-			err = multierror.Append(err, e)
-		}
-	}
-	return err.ErrorOrNil()
-}
-
 func validateOperations(ops []string) error {
 	var err *multierror.Error
 
@@ -110,4 +83,9 @@ func validateOperations(ops []string) error {
 	}
 
 	return err.ErrorOrNil()
+}
+
+func getStringHash(ptsRaw string) string {
+	ssum := sha256.Sum256([]byte(ptsRaw))
+	return base64.StdEncoding.EncodeToString(ssum[:])
 }

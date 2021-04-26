@@ -1,6 +1,7 @@
 package artifactorysecrets
 
 import (
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,7 +12,6 @@ import (
 
 func TestValidatePermissionTarget(t *testing.T) {
 
-	t.Skip("skip until reimplementing validate method")
 	t.Parallel()
 
 	t.Run("valid", func(t *testing.T) {
@@ -31,7 +31,7 @@ func TestValidatePermissionTarget(t *testing.T) {
 		}
 	})
 
-	t.Run("emtpy_repo_repositories", func(t *testing.T) {
+	t.Run("empty_repo_repositories", func(t *testing.T) {
 		t.Parallel()
 		perm := &Permission{
 			Operations: []string{"read", "write", "annotate"},
@@ -48,7 +48,7 @@ func TestValidatePermissionTarget(t *testing.T) {
 		}
 	})
 
-	t.Run("emtpy_repo_opeartions", func(t *testing.T) {
+	t.Run("empty_repo_opeartions", func(t *testing.T) {
 		t.Parallel()
 		perm := &Permission{
 			Repositories: []string{"repo"},
@@ -95,6 +95,10 @@ func TestValidateOperations(t *testing.T) {
 				t.Errorf("expecting %d errors, got %d", 2, len(merr.Errors))
 			}
 		}
+
+		if exp := "operation 'hello' is not allowed"; !strings.Contains(err.Error(), exp) {
+			t.Errorf("err: %s, exp: %s", err.Error(), exp)
+		}
 	})
 }
 
@@ -131,4 +135,12 @@ func TestConvertPermissionTarget(t *testing.T) {
 		}
 
 	})
+}
+
+func envOrDefault(key, d string) string {
+	env := os.Getenv(key)
+	if env == "" {
+		return d
+	}
+	return env
 }

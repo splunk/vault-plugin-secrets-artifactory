@@ -35,14 +35,18 @@ var createRoleSchema = map[string]*framework.FieldSchema{
 }
 
 // remove the specified role from the storage
-func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (backend *ArtifactoryBackend) pathRoleDelete(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	roleName := data.Get("name").(string)
 	if roleName == "" {
 		return logical.ErrorResponse("Unable to remove, missing role name"), nil
 	}
 
+	lock := backend.roleLock(roleName)
+	lock.RLock()
+	defer lock.RUnlock()
+
 	// get the role to make sure it exists and to get the role id
-	role, err := backend.getRoleEntry(ctx, req.Storage, roleName)
+	role, err := getRoleEntry(ctx, req.Storage, roleName)
 	if err != nil {
 		return nil, err
 	}
@@ -50,42 +54,28 @@ func (backend *ArtifactoryBackend) removeRole(ctx context.Context, req *logical.
 		return nil, nil
 	}
 
-	// garbage collect: artifactory group and associated permission targets
-	// since permission targets are only created for this specific group, we must delete them when a group is deleted
-	// ac, err := backend.getArtifactoryClient(ctx, req.Storage)
-
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	if err != nil {
-		return logical.ErrorResponse("failed to obtain artifactory config"), err
-	}
-
-	ac, err := backend.getClient(ctx, cfg)
-	if err != nil {
-		return logical.ErrorResponse("failed to obtain artifactory client"), err
-	}
-	if err = ac.DeleteGroup(role); err != nil {
-		return nil, err
-	}
-
-	// Delete all permission targets
-	for idx := range role.PermissionTargets {
-		ptName := permissionTargetName(role, idx)
-		if err := ac.DeletePermissionTarget(ptName); err != nil {
-			return logical.ErrorResponse("failed to delete a permission target: ", ptName), err
-		}
-	}
+	deleteGroup := true
 
 	if err := backend.deleteRoleEntry(ctx, req.Storage, roleName); err != nil {
 		return logical.ErrorResponse(fmt.Sprintf("Unable to remove role %s", roleName)), err
 	}
 
-	return &logical.Response{}, nil
+	// Try to clean up resources.
+	if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, role.PermissionTargets, 0, deleteGroup); cleanupErr != nil {
+		backend.Logger().Warn(
+			"unable to clean up unused artifactory resources from deleted role.",
+			"role_name", roleName, "errors", cleanupErr)
+		return &logical.Response{Warnings: []string{cleanupErr.Error()}}, nil
+	}
+
+	backend.Logger().Debug("successfully deleted role and artifactory resources", "name", roleName)
+	return nil, nil
 }
 
 // read the current role from the inputs and return it if it exists
-func (backend *ArtifactoryBackend) readRole(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (backend *ArtifactoryBackend) pathRoleRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	roleName := data.Get("name").(string)
-	role, err := backend.getRoleEntry(ctx, req.Storage, roleName)
+	role, err := getRoleEntry(ctx, req.Storage, roleName)
 	if err != nil {
 		return logical.ErrorResponse("Error reading role"), err
 	}
@@ -106,7 +96,7 @@ func (backend *ArtifactoryBackend) readRole(ctx context.Context, req *logical.Re
 }
 
 // read the current role from the inputs and return it if it exists
-func (backend *ArtifactoryBackend) listRoles(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (backend *ArtifactoryBackend) pathRolesList(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	roles, err := backend.listRoleEntries(ctx, req.Storage)
 	if err != nil {
 		return logical.ErrorResponse("Error listing roles"), err
@@ -114,38 +104,54 @@ func (backend *ArtifactoryBackend) listRoles(ctx context.Context, req *logical.R
 	return logical.ListResponse(roles), nil
 }
 
-func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+
+	roleDetails := func(role *RoleStorageEntry) map[string]interface{} {
+		return map[string]interface{}{
+			"role_id":            role.RoleID,
+			"role_name":          role.Name,
+			"permission_targets": role.RawPermissionTargets,
+		}
+	}
+
 	roleName := data.Get("name").(string)
 	if roleName == "" {
 		return logical.ErrorResponse("Role name not supplied"), nil
 	}
 
-	role, err := backend.getRoleEntry(ctx, req.Storage, roleName)
+	lock := backend.roleLock(roleName)
+	lock.RLock()
+	defer lock.RUnlock()
+
+	role, err := getRoleEntry(ctx, req.Storage, roleName)
 	if err != nil {
 		return logical.ErrorResponse("Error reading role"), err
 	}
 
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	if err != nil {
-		return logical.ErrorResponse("failed to obtain artifactory config"), err
-	}
-
-	ac, err := backend.getClient(ctx, cfg)
-	if err != nil {
-		return logical.ErrorResponse("failed to obtain artifactory client"), err
-	}
-
 	if role == nil {
-		// creating a new role
-		role = &RoleStorageEntry{}
-		// set the role ID
+		role = &RoleStorageEntry{
+			Name: roleName,
+		}
 		roleID, _ := uuid.NewUUID()
 		role.RoleID = roleID.String()
-		role.Name = roleName
+	}
 
-		if err := ac.CreateOrReplaceGroup(role); err != nil {
-			return logical.ErrorResponse("failed to create an artifactory group - ", err.Error()), err
+	isCreate := req.Operation == logical.CreateOperation
+
+	// Permission Targets
+	ptsRaw, newPermissionTargets := data.GetOk("permission_targets")
+	if newPermissionTargets {
+		pts, ok := ptsRaw.(string)
+		if !ok {
+			return logical.ErrorResponse("permission targets are not a string"), nil
 		}
+		if pts == "" {
+			return logical.ErrorResponse("permission targets are empty"), nil
+		}
+	}
+
+	if isCreate && !newPermissionTargets {
+		return logical.ErrorResponse("permission targets are required for new role"), nil
 	}
 
 	if ttlRaw, ok := data.GetOk("token_ttl"); ok {
@@ -159,73 +165,67 @@ func (backend *ArtifactoryBackend) createUpdateRole(ctx context.Context, req *lo
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
-	// TODO: garbage collection - rollback operation
-	//  - delete group if there's any error while creating a new permission target for a 'new' role
-	//  - delete any newly created permission targets if role isn't saved
-	if ptsRaw, ok := data.GetOk("permission_targets"); ok {
-		role.RawPermissionTargets = ptsRaw.(string)
+	// If no new permission tagets or new permission targets are exactly same as old permission targets,
+	// just return without updating permission targets
+	if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
+		backend.Logger().Debug("No net new permission targets are added for role", "role_name", role.Name)
+		if err := role.save(ctx, req.Storage); err != nil {
+			return logical.ErrorResponse(err.Error()), nil
+		}
+		return &logical.Response{Data: roleDetails(role)}, nil
+	}
 
-		newPts := []PermissionTarget{}
-		err := json.Unmarshal([]byte(ptsRaw.(string)), &newPts)
+	// new permission targets, update role
+	var pts []PermissionTarget
+	err = json.Unmarshal([]byte(ptsRaw.(string)), &pts)
+	if err != nil {
+		return logical.ErrorResponse("Error unmarshal permission targets. Expecting list of permission targets - " + err.Error()), nil
+	}
+	if len(pts) == 0 {
+		return logical.ErrorResponse("Failed to parse any permission targets from given permission targets JSON"), nil
+	}
+	for _, pt := range pts {
+		if err = pt.assertValid(); err != nil {
+			return logical.ErrorResponse("Failed to validate a permission target - " + err.Error()), nil
+		}
+	}
+	role.RawPermissionTargets = ptsRaw.(string)
+
+	// save role with new permission targets
+	warnings, err := backend.saveRoleWithNewPermissionTargets(ctx, req, role, pts)
+	if err != nil {
+		return logical.ErrorResponse(err.Error()), nil
+	} else if len(warnings) > 0 {
+		return &logical.Response{Warnings: warnings, Data: roleDetails(role)}, nil
+	}
+
+	return &logical.Response{Data: roleDetails(role)}, nil
+}
+
+func (backend *ArtifactoryBackend) pathRoleExistenceCheck(roleFieldName string) framework.ExistenceFunc {
+	return func(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
+		roleName := data.Get(roleFieldName).(string)
+		role, err := getRoleEntry(ctx, req.Storage, roleName)
 		if err != nil {
-			return logical.ErrorResponse("Error unmarshal permission targets. Expecting list of permission targets - " + err.Error()), err
+			return false, err
 		}
 
-		// validate for all permission targets before creating and saving
-		for _, pt := range newPts {
-			err := pt.assertValid()
-			if err != nil {
-				return logical.ErrorResponse("Failed to validate a permission target - " + err.Error()), err
-			}
-		}
-
-		existingPts := role.PermissionTargets
-		role.PermissionTargets = newPts
-
-		for idx, pt := range newPts {
-			ptName := permissionTargetName(role, idx)
-			if err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
-				return logical.ErrorResponse("Failed to create/update a permission target - ", err.Error()), err
-			}
-		}
-
-		// garbage collect: delete excess permission targets
-		// naive solution
-		// This will be replaced with WAL rollback.
-		if len(existingPts) > len(newPts) {
-			for idx := range existingPts[len(newPts):] {
-				ptName := permissionTargetName(role, idx)
-				backend.Logger().Info("Deleting permission target from artifactory", "name", ptName)
-				if err := ac.DeletePermissionTarget(ptName); err != nil {
-					return logical.ErrorResponse("failed to delete a permission target - ", err.Error()), err
-				}
-			}
-		}
+		return role != nil, nil
 	}
-
-	if err := backend.setRoleEntry(ctx, req.Storage, *role); err != nil {
-		return logical.ErrorResponse("Error saving role - " + err.Error()), err
-	}
-
-	roleDetails := map[string]interface{}{
-		"role_id":            role.RoleID,
-		"role_name":          role.Name,
-		"permission_targets": role.RawPermissionTargets,
-	}
-	return &logical.Response{Data: roleDetails}, nil
 }
 
 // set up the paths for the roles within vault
 func pathRole(backend *ArtifactoryBackend) []*framework.Path {
 	paths := []*framework.Path{
 		{
-			Pattern: fmt.Sprintf("%s/%s", rolesPrefix, framework.GenericNameRegex("name")),
-			Fields:  createRoleSchema,
+			Pattern:        fmt.Sprintf("%s/%s", rolesPrefix, framework.GenericNameRegex("name")),
+			Fields:         createRoleSchema,
+			ExistenceCheck: backend.pathRoleExistenceCheck("name"),
 			Callbacks: map[logical.Operation]framework.OperationFunc{
-				logical.CreateOperation: backend.createUpdateRole,
-				logical.UpdateOperation: backend.createUpdateRole,
-				logical.ReadOperation:   backend.readRole,
-				logical.DeleteOperation: backend.removeRole,
+				logical.CreateOperation: backend.pathRoleCreateUpdate,
+				logical.UpdateOperation: backend.pathRoleCreateUpdate,
+				logical.ReadOperation:   backend.pathRoleRead,
+				logical.DeleteOperation: backend.pathRoleDelete,
 			},
 			HelpSynopsis:    pathRoleHelpSyn,
 			HelpDescription: pathRoleHelpDesc,
@@ -241,7 +241,7 @@ func pathRoleList(backend *ArtifactoryBackend) []*framework.Path {
 		{
 			Pattern: fmt.Sprintf("%s?/?", rolesPrefix),
 			Callbacks: map[logical.Operation]framework.OperationFunc{
-				logical.ListOperation: backend.listRoles,
+				logical.ListOperation: backend.pathRolesList,
 			},
 			HelpSynopsis: pathListRoleHelpSyn,
 		},
@@ -251,9 +251,9 @@ func pathRoleList(backend *ArtifactoryBackend) []*framework.Path {
 
 const pathRoleHelpSyn = `Read/write sets of permission targets to be given to generated credentials for specified role.`
 const pathRoleHelpDesc = `
-This path allows you create roles, which bind sets of permission targets
-to specific repositories with patterns and actinos. Secrets are generated 
-under a role and will have the given set of permission targets on group.
+This path allows you to create roles, which bind sets of permission targets
+of specific repositories with patterns and actions to a group. Secrets are 
+generated under a role and will have the given set of permission targets on group.
 
 The specified permission targets file accepts an JSON string
 with the following format:

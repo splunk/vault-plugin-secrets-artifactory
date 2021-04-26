@@ -36,12 +36,6 @@ Artifactory groups are created when a role is created rather than each time a se
 
 Because the permission targets for the group are set during role creation, repositories that do not exist will fail the `Create or Replace Permission Target` API call.
 
-### Role Creation May Partially Fail
-
-Every group creation and permission target creation is an Artifactory API call per resource. If an API call to one of these resources fails, the role creation fails and Vault will attempt to rollback.
-
-These rollbackls are API calls, so they may also fail. The secrets engine uses WAL to ensure that unused permission targets are cleaned up. In the case of api failures, you may need to clean these up manually.
-
 ### Do Not Modify Vault-owned Group and Permission Targets
 
 While Vault will initially create and assign permission targets to groups, it is possible that an external user deletes or modifies this group and/or permission targets. These changesare difficult to detect, and it is best to prevent this type of modification.  
@@ -50,3 +44,12 @@ Vault-owned group have in the format: `vault-plugin.<UUID of Role ID>`
 Vault-owned permission target have in the format: `vault-plugin.pt<index of permission target counts>.<UUID of Role ID>`
 
 Communicate with your teams to not modify these resources.
+
+### Ensuring Least Privileges
+
+Until rollback is implemented, we ensure that least privileges at the time of role creation, we perform role creation and permission target creation/deletion in following order
+
+- compute what permission targets to be added/updated and what's to be removed
+- perform permission targets' removal
+- perform role creation/update
+- perform permission targets' creation/update

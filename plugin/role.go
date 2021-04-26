@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -66,24 +65,64 @@ func (role RoleStorageEntry) save(ctx context.Context, storage logical.Storage) 
 	return storage.Put(ctx, entry)
 }
 
+func (role RoleStorageEntry) permissionTargetsHash() string {
+	return getStringHash(role.RawPermissionTargets)
+}
+
 // get or create the basic lock for the role name
 func (backend *ArtifactoryBackend) roleLock(roleName string) *locksutil.LockEntry {
 	return locksutil.LockForKey(backend.roleLocks, roleName)
 }
 
-// roleSave will persist the role in the data store
-func (backend *ArtifactoryBackend) setRoleEntry(ctx context.Context, storage logical.Storage, role RoleStorageEntry) error {
-	if role.Name == "" {
-		return fmt.Errorf("Unable to save, invalid name in role")
+// saveRoleWithNewPermissionTargets will create group and permission targets
+// persist in the data store
+func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget) (warning []string, err error) {
+	backend.Logger().Debug("Creating/Updating role with new permission targets")
+
+	oldPts := role.PermissionTargets
+
+	cfg, err := backend.getConfig(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain artifactory config - %s", err.Error())
 	}
 
-	roleName := strings.ToLower(role.Name)
+	ac, err := backend.getClient(ctx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain artifactory client - %s", err.Error())
+	}
 
-	lock := backend.roleLock(roleName)
-	lock.RLock()
-	defer lock.RUnlock()
+	// Create/update a group
+	backend.Logger().Debug("creating/updating a group", "name", role.Name, "role_id", role.RoleID)
+	if err := ac.CreateOrReplaceGroup(role); err != nil {
+		return nil, fmt.Errorf("failed to create an artifactory group - %s", err.Error())
+	}
 
-	return role.save(ctx, storage)
+	if len(oldPts) > len(pts) {
+		backend.Logger().Debug("removing role excessive permission targets", "role_name", role.Name)
+		if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, oldPts[len(pts):], len(pts), false); cleanupErr != nil {
+			backend.Logger().Warn(
+				"unable to clean up unused old permission targets for role.",
+				"role_name", role.Name, "errors", cleanupErr)
+			return []string{cleanupErr.Error()}, nil
+		}
+	}
+
+	// update permission target in role before save
+	role.PermissionTargets = pts
+	if err = role.save(ctx, req.Storage); err != nil {
+		return nil, err
+	}
+
+	// Create/Update permission targets
+	for idx, pt := range pts {
+		ptName := permissionTargetName(role.Name, idx)
+		backend.Logger().Debug("creating/updating a permission target", "name", ptName)
+		if err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
+			return nil, fmt.Errorf("Failed to create/update a permission target - %s", err.Error())
+		}
+	}
+
+	return nil, nil
 }
 
 // deleteRoleEntry will remove the role with specified name from storage
@@ -91,17 +130,12 @@ func (backend *ArtifactoryBackend) deleteRoleEntry(ctx context.Context, storage 
 	if roleName == "" {
 		return fmt.Errorf("missing role name")
 	}
-	roleName = strings.ToLower(roleName)
-
-	lock := backend.roleLock(roleName)
-	lock.RLock()
-	defer lock.RUnlock()
 
 	return storage.Delete(ctx, fmt.Sprintf("%s/%s", rolesPrefix, roleName))
 }
 
 // getRoleEntry fetches a role from the storage
-func (backend *ArtifactoryBackend) getRoleEntry(ctx context.Context, storage logical.Storage, roleName string) (*RoleStorageEntry, error) {
+func getRoleEntry(ctx context.Context, storage logical.Storage, roleName string) (*RoleStorageEntry, error) {
 	var result RoleStorageEntry
 	if entry, err := storage.Get(ctx, fmt.Sprintf("%s/%s", rolesPrefix, roleName)); err != nil {
 		return nil, err
@@ -116,9 +150,44 @@ func (backend *ArtifactoryBackend) getRoleEntry(ctx context.Context, storage log
 
 // listRoleEntries gets all the roles
 func (backend *ArtifactoryBackend) listRoleEntries(ctx context.Context, storage logical.Storage) ([]string, error) {
-	roles, err := storage.List(ctx, "roles/")
+	roles, err := storage.List(ctx, fmt.Sprintf("%s/", rolesPrefix))
 	if err != nil {
 		return nil, err
 	}
 	return roles, nil
+}
+
+func (backend *ArtifactoryBackend) tryDeleteRoleResources(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget, offset int, deleteGroup bool) error {
+	if len(pts) == 0 {
+		backend.Logger().Debug("skip deletion for empty permission targets")
+	}
+
+	cfg, err := backend.getConfig(ctx, req.Storage)
+	if err != nil {
+		return fmt.Errorf("failed to obtain artifactory config - %s", err.Error())
+	}
+
+	ac, err := backend.getClient(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to obtain artifactory client - %s", err.Error())
+	}
+
+	var merr *multierror.Error
+
+	if deleteGroup {
+		if err = ac.DeleteGroup(role); err != nil {
+			backend.Logger().Info("Deleting group from artifactory", "name", groupName(role), "role", role.Name)
+			merr = multierror.Append(merr, fmt.Errorf("failed to delete a group for role %s - %s", role.Name, err.Error()))
+		}
+	}
+
+	for idx := range pts {
+		ptName := permissionTargetName(role.Name, idx+offset)
+		backend.Logger().Info("Deleting permission target from artifactory", "name", ptName, "role_name", role.Name)
+		if err := ac.DeletePermissionTarget(ptName); err != nil {
+			merr = multierror.Append(merr, fmt.Errorf("failed to delete a permission target %s for role %s - %s", ptName, role.Name, err.Error()))
+		}
+	}
+
+	return merr.ErrorOrNil()
 }
