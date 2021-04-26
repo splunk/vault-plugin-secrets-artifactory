@@ -27,8 +27,6 @@ services:
       timeout: 3s
     ports:
       - 8200:8200
-    # networks:
-    #   - dev
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: root
       VAULT_DISABLE_MLOCK: "true"
@@ -38,10 +36,3 @@ services:
       # - ./vault-config.hcl:/vault/config
     #cap_add:
     #  - IPC_LOCK
-    # networks:
-    #   - dev
-# networks:
-#   dev:
-  # default:
-  #   external:
-  #     name: dev

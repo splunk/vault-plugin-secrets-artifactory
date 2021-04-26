@@ -11,7 +11,7 @@ build:
 	go build -v -o plugins/$(NAME)
 
 build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o plugins/$(NAME)
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o plugins/$(NAME)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
@@ -20,7 +20,7 @@ test:
 	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 integration-test: dev
-	go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
+	#go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 report: .tools/gocover-cobertura
 	go tool cover -html=coverage.out -o coverage.html
@@ -68,4 +68,4 @@ tools: .tools/docker-compose .tools/gocover-cobertura .tools/golangci-lint .tool
 	curl -o .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
 	(cd .tools && unzip vault.zip && rm vault.zip)
 
-.PHONY: all get build lint test integration-test report vault-only dev tools
+.PHONY: all get build build-linux lint test integration-test report vault-only dev clean-dev clean-all tools

@@ -27,8 +27,5 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: root
       VAULT_DISABLE_MLOCK: "true"
     volumes:
-      # - ../plugins:/vault/plugins
       - /vault/plugins
-      # - /tmp/vault/plugins:/vault/plugins:ro,shared
-      # - $CI_PROJECT_DIR/plugins:/vault/plugins
     network_mode: "host"

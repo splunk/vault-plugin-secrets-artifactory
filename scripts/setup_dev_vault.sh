@@ -19,9 +19,7 @@ if [ "$existing" == "null" ]; then
     sha=$(sha256sum plugins/$plugin | cut -d' ' -f1)
     # if plugin is missing, it is assumed this is a CI environment and vault is running in a container
     docker cp plugins/* vault:/vault/plugins
-    docker exec vault ls -al /vault/plugins
     vault plugin register -sha256=$sha secret $plugin
-    vault plugin list
   fi
 
   vault secrets enable -path=artifactory $plugin
