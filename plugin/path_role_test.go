@@ -10,7 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-var repo = os.Getenv("REPOSITORY_NAME")
+var repo = os.Getenv("ARTIFACTORY_REPOSITORY_NAME")
 
 func TestPathRole(t *testing.T) {
 	if testing.Short() {
@@ -21,7 +21,7 @@ func TestPathRole(t *testing.T) {
 
 	conf := map[string]interface{}{
 		"base_url":     os.Getenv("ARTIFACTORY_URL"),
-		"bearer_token": os.Getenv("BEARER_TOKEN"),
+		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
 

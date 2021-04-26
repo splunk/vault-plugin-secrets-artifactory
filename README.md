@@ -153,7 +153,7 @@ make build
 make dev-server
 
 # New terminal
-export VAULT_ADDR=https://127.0.0.1:8200
+export VAULT_ADDR=http://localhost:8200
 export ARTIFACTORY_URL="https://artifactory.example.com/artifactory"
 export ARTIFACTORY_BEARER_TOKEN=TOKEN
 

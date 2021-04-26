@@ -18,7 +18,7 @@ func TestIssueToken(t *testing.T) {
 
 	conf := map[string]interface{}{
 		"base_url":     os.Getenv("ARTIFACTORY_URL"),
-		"bearer_token": os.Getenv("BEARER_TOKEN"),
+		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
 		"max_ttl":      "600s",
 	}
 	testConfigUpdate(t, b, storage, conf)

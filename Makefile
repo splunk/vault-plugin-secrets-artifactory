@@ -11,7 +11,7 @@ build:
 	go build -v -o plugins/$(NAME)
 
 build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o plugins/$(NAME)
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o plugins/$(NAME)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
@@ -20,7 +20,7 @@ test:
 	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 integration-test: dev
-	#go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
+	go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 report: .tools/gocover-cobertura
 	go tool cover -html=coverage.out -o coverage.html
