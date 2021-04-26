@@ -19,7 +19,9 @@ lint: .tools/golangci-lint
 test:
 	go test -short -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
-integration-test: dev
+integration-test: tools build-linux
+	@eval $(shell ./scripts/init_dev.sh)
+	env | grep ARTIFACTORY
 	go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS)
 
 report: .tools/gocover-cobertura
