@@ -41,7 +41,7 @@ eval $("$DIR/setup_dev_vault.sh")
 # ARTIFACTORY_URL will always be localhost outside of containers
 export ARTIFACTORY_URL='http://localhost:8081/artifactory'
 # eval output for local use
-echo -e "\n\033[1;33mCopy/paste or eval this script:\033[0m\n" >&2
+echo -e "\n\033[1;33meval this script to set Artifactory/Vault env vars\033[0m\n" >&2
 echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
 echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
