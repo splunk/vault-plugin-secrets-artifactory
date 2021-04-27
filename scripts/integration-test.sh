@@ -14,7 +14,7 @@ if [ "$CI_DEBUG_TRACE" = true ]; then
 fi
 set -u
 
-make integration-test
+make integration-test report
 exit_code=$?
 
 # any additional logic/debugging can go here

@@ -35,37 +35,36 @@ dev: tools build-linux
 clean-dev:
 	@cd scripts && docker-compose down
 
-clean-all: dev-clean
+clean-all: clean-dev
 	@rm -rf .tools coverage.* plugins
 
-tools: .tools/docker-compose .tools/gocover-cobertura .tools/golangci-lint .tools/jq .tools/vault 
+tools: .tools/docker-compose .tools/gocover-cobertura .tools/golangci-lint .tools/jq .tools/vault
+
+.tools:
+	@mkdir -p .tools
 
 .tools/docker-compose: DOCKER_COMPOSE_VERSION = 1.29.1
 .tools/docker-compose: DOCKER_COMPOSE_BINARY = "docker-compose-$(shell uname -s)-$(shell uname -m)"
-.tools/docker-compose:
-	@mkdir -p .tools
-	echo $(DOCKER_COMPOSE_BINARY)
-	curl -o .tools/docker-compose -L "https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/$(DOCKER_COMPOSE_BINARY)"
+.tools/docker-compose: .tools
+	curl -so .tools/docker-compose -L "https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/$(DOCKER_COMPOSE_BINARY)"
 	@chmod +x .tools/docker-compose
 
-.tools/gocover-cobertura:
+.tools/gocover-cobertura: .tools
 	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.1.0
 
-.tools/golangci-lint:
+.tools/golangci-lint: .tools
 	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39.0
 
 .tools/jq: JQ_VERSION = 1.6
 .tools/jq: JQ_PLATFORM = $(patsubst darwin,osx-amd,$(shell uname -s | tr A-Z a-z))
-.tools/jq:
-	@mkdir -p .tools
-	curl -o .tools/jq -sSL https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-$(JQ_PLATFORM)64
+.tools/jq: .tools
+	curl -so .tools/jq -sSL https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-$(JQ_PLATFORM)64
 	@chmod +x .tools/jq
 
 .tools/vault: VAULT_VERSION = 1.7.1
 .tools/vault: VAULT_PLATFORM = $(shell uname -s | tr A-Z a-z)
-.tools/vault:
-	@mkdir -p .tools
-	curl -o .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
-	(cd .tools && unzip vault.zip && rm vault.zip)
+.tools/vault: .tools
+	curl -so .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
+	(cd .tools && unzip -o vault.zip && rm vault.zip)
 
 .PHONY: all get build build-linux lint test integration-test report vault-only dev clean-dev clean-all tools
