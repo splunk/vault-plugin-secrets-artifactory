@@ -1,6 +1,5 @@
 NAME?=vault-artifactory-secrets-plugin
 
-
 .DEFAULT_GOAL := all
 all: get build lint test 
 
@@ -12,6 +11,12 @@ build:
 
 build-linux:
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o plugins/$(NAME)
+
+# Currently publishing to  
+# Once cloud artifactory is ready, we need to migrate using ephemeral credential
+publish:
+	$(eval VERSION=$(shell gitversion show))
+	./scripts/publish.sh linux amd64 $(VERSION)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
@@ -67,4 +72,4 @@ tools: .tools/docker-compose .tools/gocover-cobertura .tools/golangci-lint .tool
 	curl -so .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
 	(cd .tools && unzip -o vault.zip && rm vault.zip)
 
-.PHONY: all get build build-linux lint test integration-test report vault-only dev clean-dev clean-all tools
+.PHONY: all get build build-linux publish lint test integration-test report vault-only dev clean-dev clean-all tools
