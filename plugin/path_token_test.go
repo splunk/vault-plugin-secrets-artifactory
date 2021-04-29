@@ -3,31 +3,22 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestIssueToken(t *testing.T) {
+func TestAccIssueToken(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test (short)")
 	}
 
-	backend, storage := getTestBackend(t)
+	req, backend := newAccEnv(t)
 
-	conf := map[string]interface{}{
-		"base_url":     os.Getenv("ARTIFACTORY_URL"),
-		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
-		"max_ttl":      "600s",
-	}
-	testConfigUpdate(t, backend, storage, conf)
-	var repo = envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
-
-	req := &logical.Request{
-		Storage: storage,
-	}
-	roleName := "test_role"
+	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
+	roleName := "test_issue_token_role"
 	data := map[string]interface{}{
 		"name": roleName,
 		"permission_targets": fmt.Sprintf(`
@@ -43,24 +34,14 @@ func TestIssueToken(t *testing.T) {
 		]
 		`, repo),
 	}
-	resp, err := testRoleCreate(req, backend, t, roleName, data)
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+	mustRoleCreate(req, backend, t, roleName, data)
 
-	resp, err = testIssueToken(req, backend, t, roleName)
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+	resp, err := testIssueToken(req, backend, t, roleName)
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
 
-	if resp.Data["access_token"] == "" {
-		t.Fatal("no token returned\n")
-	}
-
-	if resp.Data["username"] == "" {
-		t.Fatal("no username returned\n")
-	}
-
+	assert.NotEmpty(t, resp.Data["access_token"], "no token returned")
+	assert.NotEmpty(t, resp.Data["username"], "no username returned")
 }
 
 // create the token given the parameters

@@ -165,7 +165,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
-	// If no new permission tagets or new permission targets are exactly same as old permission targets,
+	// If no new permission targets or new permission targets are exactly same as old permission targets,
 	// just return without updating permission targets
 	if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
 		backend.Logger().Debug("No net new permission targets are added for role", "role_name", role.Name)

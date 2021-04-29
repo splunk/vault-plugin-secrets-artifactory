@@ -50,13 +50,13 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 		artifactoryDetails.SetUser(config.Username)
 		artifactoryDetails.SetPassword(config.Password)
 	} else {
-		return ac, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
+		return nil, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
 	}
 
 	artifactoryServiceConfig, err := artconfig.NewConfigBuilder().
 		SetServiceDetails(artifactoryDetails).
 		// SetDryRun(false).
-		// SetContext(ctx).
+		SetContext(ctx).
 		SetThreads(1).
 		Build()
 	if err != nil {
@@ -70,7 +70,6 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 	ac.client = client
 
 	return ac, nil
-
 }
 
 func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {

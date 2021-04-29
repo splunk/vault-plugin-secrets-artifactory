@@ -3,34 +3,23 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/jfrog/jfrog-client-go/artifactory"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/mitchellh/mapstructure"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestPathRole(t *testing.T) {
+func TestAccPathRole(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("skipping integration test (short)")
 	}
 
-	backend, storage := getTestBackend(t)
-	conf := map[string]interface{}{
-		"base_url":     os.Getenv("ARTIFACTORY_URL"),
-		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
-		"max_ttl":      "600s",
-	}
-
-	testConfigUpdate(t, backend, storage, conf)
-
-	/***  TEST CREATE OPERATION ***/
-	req := &logical.Request{
-		Storage: storage,
-	}
-	var repo = envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
-
+	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
 	rawPt := fmt.Sprintf(`
 	[
 		{
@@ -43,140 +32,335 @@ func TestPathRole(t *testing.T) {
 		}
 	]
 	`, repo)
-	data := map[string]interface{}{
-		"permission_targets": rawPt,
+
+	t.Run("create_role", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+
+		roleName := "test_create_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+	})
+
+	t.Run("get_role", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+
+		roleName := "test_get_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+
+		resp, err := testRoleRead(req, backend, t, roleName)
+		require.NoError(t, err)
+		require.False(t, resp.IsError())
+
+		var returnedRole RoleStorageEntry
+		err = mapstructure.Decode(resp.Data, &returnedRole)
+		require.NoError(t, err, "failed to decode")
+		assert.Equal(t, roleName, returnedRole.Name, "incorrect role name %q returned", returnedRole.Name)
+	})
+
+	t.Run("update_role_without_change", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		roleName := "test_update_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+		mustRoleCreate(req, backend, t, roleName, data)
+	})
+
+	t.Run("list_roles", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+
+		roleName1 := "test_list_role1"
+		roleName2 := "test_list_role2"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName1,
+		}
+
+		mustRoleCreate(req, backend, t, roleName1, data)
+		data["name"] = roleName2
+		mustRoleCreate(req, backend, t, roleName2, data)
+
+		resp, err := testRoleList(req, backend, t)
+		require.NoError(t, err)
+		require.False(t, resp.IsError())
+
+		var listResp map[string]interface{}
+		err = mapstructure.Decode(resp.Data, &listResp)
+		require.NoError(t, err)
+
+		returnedRoles := listResp["keys"].([]string)
+		assert.Len(t, returnedRoles, 2, "incorrect number of roles")
+		assert.Equal(t, roleName1, returnedRoles[0], "incorrect path set")
+		assert.Equal(t, roleName2, returnedRoles[1], "incorrect path set")
+	})
+
+	t.Run("delete_role", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+
+		roleName := "test_delete_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+
+		mustRoleCreate(req, backend, t, roleName, data)
+		mustRoleDelete(req, backend, t, roleName)
+	})
+}
+
+func TestAccPathRole_Artifactory(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping integration test (short)")
 	}
 
-	data["name"] = "test_role1"
-	resp, err := testRoleCreate(req, backend, t, "test_role1", data)
+	ctx := context.Background()
+	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
+	rawPt := fmt.Sprintf(`
+	[
+		{
+			"repo": {
+				"include_patterns": ["/mytest/**"],
+				"exclude_patterns": [""],
+				"repositories": ["%s"],
+				"operations": ["read", "write", "annotate"]
+			}
+		}
+	]
+	`, repo)
 
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+	t.Run("modify_permission_target", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		ac := mustGetAccClient(ctx, t, req, backend)
 
-	/***  TEST GET OPERATION ***/
-	resp, err = testRoleRead(req, backend, t, "test_role1")
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		roleName := "test_modify_permission_target_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+		role, err := getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
 
-	var returnedRole RoleStorageEntry
-	err = mapstructure.Decode(resp.Data, &returnedRole)
-	if err != nil {
-		t.Fatalf("failed to decode. err: %s", err)
-	}
+		assertPermissionTarget(t, ac, role, 0)
 
-	if returnedRole.Name != "test_role1" {
-		t.Fatalf("incorrect role name %s returned, not the same as saved value \n", returnedRole.Name)
-	}
+		modifiedPt := fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest-modified/**"],
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["write"]
+				}
+			}
+		]
+		`, repo)
 
-	/*** Test Update without update ***/
-	data["name"] = "test_role2"
-	resp, err = testRoleCreate(req, backend, t, "test_role2", data)
+		data["permission_targets"] = modifiedPt
+		mustRoleUpdate(req, backend, t, roleName, data)
+		role, err = getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
 
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		// assert permission target in Artifactory matches updated role data
+		assertPermissionTarget(t, ac, role, 0)
+	})
 
-	resp, err = testRoleCreate(req, backend, t, "test_role2", data)
+	t.Run("append_permission_target", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		ac := mustGetAccClient(ctx, t, req, backend)
 
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		roleName := "test_modify_permission_target_role"
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+		role, err := getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
 
-	/*** TEST GET NON-EXISTENT ROLE ***/
-	resp, err = testRoleRead(req, backend, t, "test_role3")
-	if err != nil && resp != nil {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		assertPermissionTarget(t, ac, role, 0)
 
-	/***  TEST List OPERATION ***/
-	resp, err = testRoleList(req, backend, t)
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		newPt := fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["read", "write", "annotate"]
+				}
+			},
+			{
+				"repo": {
+					"include_patterns": ["/mytest2/**"],
+					"exclude_patterns": ["/mytest2/foo/**"],
+					"repositories": ["%s"],
+					"operations": ["read", "write"]
+				}
+			}
+		]
+		`, repo, repo)
 
-	var listResp map[string]interface{}
-	err = mapstructure.Decode(resp.Data, &listResp)
-	if err != nil {
-		t.Fatalf("failed to decode. err: %s", err)
-	}
+		data["permission_targets"] = newPt
+		mustRoleUpdate(req, backend, t, roleName, data)
+		role, err = getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
 
-	returnedRoles := listResp["keys"].([]string)
+		// assert permission target in Artifactory matches role data
+		assertPermissionTarget(t, ac, role, 0)
+		assertPermissionTarget(t, ac, role, 1)
+	})
 
-	if len(returnedRoles) != 2 {
-		t.Fatalf("incorrect number of roles \n")
-	}
+	t.Run("delete_permission_target", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		ac := mustGetAccClient(ctx, t, req, backend)
 
-	if returnedRoles[0] != "test_role1" && returnedRoles[1] != "test_role2" {
-		t.Fatalf("incorrect path set \n")
-	}
+		roleName := "test_delete_permission_target_role"
 
-	/***  TEST Delete OPERATION ***/
-	resp, err = testRoleDelete(req, backend, t, "test_role1")
-	if err != nil || (resp != nil && resp.IsError()) {
-		t.Fatalf("err:%s resp:%#v\n", err, resp)
-	}
+		initialPts := fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["read", "write", "annotate"]
+				}
+			},
+			{
+				"repo": {
+					"include_patterns": ["/mytest2/**"],
+					"exclude_patterns": ["/mytest2/foo/**"],
+					"repositories": ["%s"],
+					"operations": ["read", "write"]
+				}
+			}
+		]
+		`, repo, repo)
+		data := map[string]interface{}{
+			"permission_targets": initialPts,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+		role, err := getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
+
+		assertPermissionTarget(t, ac, role, 0)
+		assertPermissionTarget(t, ac, role, 1)
+
+		removedPt := fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["read", "write", "annotate"]
+				}
+			}
+		]
+		`, repo)
+
+		data["permission_targets"] = removedPt
+		mustRoleUpdate(req, backend, t, roleName, data)
+		role, err = getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
+		assert.Len(t, role.PermissionTargets, 1)
+
+		// assert permission target in Artifactory matches role data
+		assertPermissionTarget(t, ac, role, 0)
+		assertPermissionTargetDeleted(t, ac, role, 1)
+	})
+
+	t.Run("delete_role_removes_resources", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		ac := mustGetAccClient(ctx, t, req, backend)
+
+		roleName := "test_delete_role"
+
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		mustRoleCreate(req, backend, t, roleName, data)
+		role, err := getRoleEntry(ctx, req.Storage, roleName)
+		require.NoError(t, err)
+
+		assertPermissionTarget(t, ac, role, 0)
+
+		mustRoleDelete(req, backend, t, roleName)
+
+		assertGroupDeleted(t, ac, role)
+		assertPermissionTargetDeleted(t, ac, role, 0)
+
+		role, err = getRoleEntry(ctx, req.Storage, roleName)
+		require.Nil(t, role)
+		require.NoError(t, err)
+	})
+
 }
 
 func TestPathRoleFail(t *testing.T) {
-
-	backend, storage := getTestBackend(t)
-
-	conf := map[string]interface{}{
-		"base_url":     os.Getenv("ARTIFACTORY_URL"),
-		"bearer_token": os.Getenv("ARTIFACTORY_BEARER_TOKEN"),
-		"max_ttl":      "600s",
-	}
-
-	testConfigUpdate(t, backend, storage, conf)
-
-	req := &logical.Request{
-		Storage: storage,
-	}
+	t.Parallel()
+	req, backend := newMockEnv(t)
 	data := make(map[string]interface{})
-	data["name"] = "test_role1"
+
+	t.Run("nonexistent_role", func(t *testing.T) {
+		roleName := "test_role1"
+		data["name"] = roleName
+		resp, err := testRoleRead(req, backend, t, "noname")
+		require.NoError(t, err)
+		require.Nil(t, resp)
+	})
 
 	t.Run("no_permission_targets_for_new_role", func(t *testing.T) {
+		roleName := "test_role1"
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
 
-		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
-
-		if !resp.IsError() {
-			t.Fatal("expecting error")
-		}
-		if errmsg, exp := resp.Data["error"].(string), "permission targets are required for new role"; errmsg != exp {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
+		actualErr := resp.Data["error"].(string)
+		expected := "permission targets are required for new role"
+		assert.Contains(t, actualErr, expected)
 	})
 
 	t.Run("empty_permission_targets", func(t *testing.T) {
-
+		roleName := "test_role1"
 		data["permission_targets"] = ""
-		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
 
-		if !resp.IsError() {
-			t.Fatal("expecting error")
-		}
-		if errmsg, exp := resp.Data["error"].(string), "permission targets are empty"; errmsg != exp {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
+		actualErr := resp.Data["error"].(string)
+		expected := "permission targets are empty"
+		assert.Contains(t, actualErr, expected)
 	})
 
 	t.Run("unmarshable_permission_target", func(t *testing.T) {
-
+		roleName := "test_role1"
 		data["permission_targets"] = 60
-		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
+		data["name"] = roleName
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
 
-		if !resp.IsError() {
-			t.Fatal("expecting error")
-		}
-		if errmsg, exp := resp.Data["error"].(string), "Error unmarshal permission targets. Expecting list of permission targets"; !strings.Contains(errmsg, exp) {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
+		actualErr := resp.Data["error"].(string)
+		expected := "Error unmarshal permission targets. Expecting list of permission targets"
+		assert.Contains(t, actualErr, expected)
 	})
 
 	t.Run("permission_target_empty_required_field", func(t *testing.T) {
-
+		roleName := "test_role1"
 		rawPt := `
 		[
 			{
@@ -188,22 +372,20 @@ func TestPathRoleFail(t *testing.T) {
 		]
 		`
 		data["permission_targets"] = rawPt
+		data["name"] = roleName
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
 
-		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
-		if !resp.IsError() {
-			t.Fatal("expecting error")
-		}
-		if errmsg, exp := resp.Data["error"].(string), "repo.repositories' field must be supplied"; !strings.Contains(errmsg, exp) {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
-
-		if errmsg, exp := resp.Data["error"].(string), "repo.operations' field must be supplied"; !strings.Contains(errmsg, exp) {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
+		actualErr := resp.Data["error"].(string)
+		expected1 := "repo.repositories' field must be supplied"
+		expected2 := "repo.operations' field must be supplied"
+		assert.Contains(t, actualErr, expected1)
+		assert.Contains(t, actualErr, expected2)
 	})
 
 	t.Run("permission_target_invalid_operation", func(t *testing.T) {
-
+		roleName := "test_role1"
 		rawPt := `
 		[
 			{
@@ -216,19 +398,61 @@ func TestPathRoleFail(t *testing.T) {
 		]
 		`
 		data["permission_targets"] = rawPt
-		resp, _ := testRoleCreate(req, backend, t, "test_role1", data)
-		if !resp.IsError() {
-			t.Fatal("expecting error")
-		}
-		if errmsg, exp := resp.Data["error"].(string), "operation 'invalidop' is not allowed"; !strings.Contains(errmsg, exp) {
-			t.Errorf("err:%s exp:%#v\n", errmsg, exp)
-		}
+		data["name"] = roleName
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
+		actualErr := resp.Data["error"].(string)
+		expected := "operation 'invalidop' is not allowed"
+		assert.Contains(t, actualErr, expected)
 	})
+}
 
+// assertPermissionTarget inspects the actual PermissionTarget in Artifactory against the one in vault role.
+func assertPermissionTarget(t *testing.T, ac artifactory.ArtifactoryServicesManager, role *RoleStorageEntry, permissionTargetIndex int) {
+	t.Helper()
+	ptName := permissionTargetName(role.Name, permissionTargetIndex)
+	expected := role.PermissionTargets[permissionTargetIndex]
+	actual, err := ac.GetPermissionTarget(ptName)
+	require.NoError(t, err, "Error retrieving permission target from Artifactory")
+
+	assert.Equal(t, expected.Repo.IncludePatterns, actual.Repo.IncludePatterns, "permission target IncludePatterns should match permission target input provided to vault")
+	if len(expected.Repo.ExcludePatterns) == 1 && expected.Repo.ExcludePatterns[0] == "" {
+		assert.Empty(t, actual.Repo.ExcludePatterns, "permission target ExcludePatterns should be empty")
+	} else {
+		assert.Equal(t, expected.Repo.ExcludePatterns, actual.Repo.ExcludePatterns, "permission target ExcludePatterns should match permission target input provided to vault")
+
+	}
+	assert.Equal(t, expected.Repo.Repositories, actual.Repo.Repositories, "permission target repositories should match permission target input provided to vault")
+
+	assert.Len(t, actual.Repo.Actions.Groups, 1, "A generated Permission Target should map to a single group.")
+	actualGroupOperations := actual.Repo.Actions.Groups[groupName(role)]
+	assert.ElementsMatch(t, expected.Repo.Operations, actualGroupOperations)
+}
+
+func assertPermissionTargetDeleted(t *testing.T, ac artifactory.ArtifactoryServicesManager, role *RoleStorageEntry, permissionTargetIndex int) {
+	t.Helper()
+	ptName := permissionTargetName(role.Name, permissionTargetIndex)
+	actual, err := ac.GetPermissionTarget(ptName)
+	assert.Nil(t, actual)
+	assert.Error(t, err, "Artifactory should throw an error")
+	assert.Contains(t, err.Error(), "404 Not Found")
+}
+
+func assertGroupDeleted(t *testing.T, ac artifactory.ArtifactoryServicesManager, role *RoleStorageEntry) {
+	t.Helper()
+	params := services.GroupParams{
+		GroupDetails: services.Group{
+			Name: groupName(role),
+		},
+	}
+	group, err := ac.GetGroup(params)
+	assert.NoError(t, err, "Artifactory should return nil error for non-existent group")
+	assert.Nil(t, group, "Group %s should be deleted", groupName(role))
 }
 
 func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) (*logical.Response, error) {
-
+	t.Helper()
 	req.Operation = logical.CreateOperation
 	req.Path = fmt.Sprintf("roles/%s", roleName)
 	req.Data = data
@@ -237,7 +461,34 @@ func testRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleN
 	return resp, err
 }
 
+func mustRoleCreate(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) {
+	t.Helper()
+	resp, err := testRoleCreate(req, b, t, roleName, data)
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
+}
+
+// testRoleUpdate should effectively be the same op as testRoleCreate as the same
+// pathRoleCreateUpdate function is used for both Create and Update operations.
+func testRoleUpdate(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) (*logical.Response, error) {
+	t.Helper()
+	req.Operation = logical.UpdateOperation
+	req.Path = fmt.Sprintf("roles/%s", roleName)
+	req.Data = data
+
+	resp, err := b.HandleRequest(context.Background(), req)
+	return resp, err
+}
+
+func mustRoleUpdate(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) {
+	t.Helper()
+	resp, err := testRoleUpdate(req, b, t, roleName, data)
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
+}
+
 func testRoleRead(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
+	t.Helper()
 	data := map[string]interface{}{
 		"name": roleName,
 	}
@@ -251,6 +502,7 @@ func testRoleRead(req *logical.Request, b logical.Backend, t *testing.T, roleNam
 }
 
 func testRoleDelete(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
+	t.Helper()
 	data := map[string]interface{}{
 		"name": roleName,
 	}
@@ -263,21 +515,16 @@ func testRoleDelete(req *logical.Request, b logical.Backend, t *testing.T, roleN
 	return resp, err
 }
 
-func testRoleList(req *logical.Request, b logical.Backend, t *testing.T) (*logical.Response, error) {
+func mustRoleDelete(req *logical.Request, b logical.Backend, t *testing.T, roleName string) {
+	resp, err := testRoleDelete(req, b, t, roleName)
+	require.NoError(t, err)
+	require.Nil(t, resp)
+}
 
+func testRoleList(req *logical.Request, b logical.Backend, t *testing.T) (*logical.Response, error) {
+	t.Helper()
 	req.Operation = logical.ListOperation
 	req.Path = "roles"
 	resp, err := b.HandleRequest(context.Background(), req)
 	return resp, err
 }
-
-// Note: testing situation
-// 1. role create
-// 2. modification on exisitng permission target
-// 3. check the permission target in artifactory
-// 4. append a new permission target on top of existing ones
-// 5. check newly permission target is created along with old ones in artifactory
-// 6. remove a permission target
-// 7. check if the permission target is removed from artifactory
-// 8. remove a role
-// 9. check artifactory group and permission targets are deleted in artifactory
