@@ -47,9 +47,14 @@ Success! Enabled the vault-artifactory-secrets-plugin secrets engine at: artifac
 # configure the /config backend. You must supply admin bearer token or username/password pair of an admin user.
 $ vault write artifactory/config base_url="https://artifactory.example.com/artifactory" bearer_token=$BEARER_TOKEN ttl=600 max_ttl=600
 
-# creating a role
+# see supported paths
+$ vault path-help artifactory/
+$ vault path-help artifactory/config
+
+# create a role
 $ vault write artifactory/roles/ci-role token_ttl=600 permission_targets=@scripts/sample_permission_targets.json
 
+# generate an ephemeral artifactory token
 $ vault write artifactory/token/ci-role ttl=60
 Key             Value
 ---             -----
@@ -114,7 +119,7 @@ permission targets registered to a role **will delete those existing permission 
 
 ```sh
 # To grab existing permission targets
-$ vault read artifactory/roles/ci-role -format=json | jq -r .data.permission_targets > permission_targets.json
+$ vault read artifactory/roles/ci-role -format=json | jq '.data.permission_targets|fromjson' > permission_targets.json
 ```
 
 ### Garbage Collection
@@ -130,7 +135,7 @@ roles. To this nature, it collects garbage when update/delete operation is perfo
 ### Full dev environment
 
 This will spin up an Artifactory Pro instance and Vault server in dev mode with the plugin
-configured:
+configured.
 
 Requirements:
 
@@ -138,12 +143,17 @@ Requirements:
 
 ```sh
 export ARTIFACTORY_LICENSE_KEY="<licenseKey>"
+
+# spin up dev environment and print out env vars necessary for Vault/Artifactory.
 make dev
 
 # or do this to capture capture Artifactory/Vault env vars:
 make tools
 eval $(make dev)
 ```
+
+To access the dev env Artifactory UI, navigate to [http://localhost:8082](http://localhost:8082)
+and log in with the `ARTIFACTORY_USER` and `ARTIFACTORY_PASSWORD` output above.
 
 ### Developing with an existing Artifactory instance
 
@@ -160,7 +170,7 @@ make dev-server
 
 # New terminal
 export VAULT_ADDR=http://localhost:8200
-export ARTIFACTORY_URL="https://artifactory.example.com/artifactory"
+export ARTIFACTORY_URL="https://artifactory.example.com/artifactory/"
 export ARTIFACTORY_BEARER_TOKEN=TOKEN
 
 # enable secrets backend and configuration
@@ -179,12 +189,12 @@ make test
 # run subset of tests
 make test TESTARGS='-run=TestConfig'
 
+# run integration tests (spins up local vault and artifactory instance)
+make integration-test
+
 # generate a code coverage report
 make report
 open coverage.html
-
-# run integration tests (spins up local vault and artifactory instance)
-make integration-test
 ```
 
 ## Roadmap

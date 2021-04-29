@@ -9,12 +9,12 @@ DIR=$(dirname "$0")
 . $DIR/wait_for.sh
 
 pushd $DIR &>/dev/null
-docker-compose version >&2
+# docker-compose version >&2
 
 set +u
 if [ -n "$CI" ]; then
-  echo "Starting containers in net=host mode..."
-  docker-compose -f docker-compose-ci.yaml up -d
+  echo "Starting containers in net=host mode..." >&2
+  docker-compose -f docker-compose-ci.yaml up -d >&2
 else
   docker-compose up -d >&2
 fi
@@ -31,7 +31,7 @@ eval $("$DIR/setup_dev_artifactory.sh")
 # if local env, configure vault plugin to talk to artifactory container hostname
 set +u
 if [ -z "$CI" ]; then
-  export ARTIFACTORY_URL='http://artifactory:8081/artifactory'
+  export ARTIFACTORY_URL='http://artifactory:8081/artifactory/'
 fi
 
 echo "Configuring vault..." >&2
@@ -39,13 +39,14 @@ echo "Configuring vault..." >&2
 eval $("$DIR/setup_dev_vault.sh")
 
 # ARTIFACTORY_URL will always be localhost outside of containers
-export ARTIFACTORY_URL='http://localhost:8081/artifactory'
+export ARTIFACTORY_URL='http://localhost:8081/artifactory/'
 # eval output for local use
 echo -e "\n\033[1;33meval this script to set Artifactory/Vault env vars\033[0m\n" >&2
 echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
 echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
 echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
+echo export ARTIFACTORY_API_KEY=\"$ARTIFACTORY_API_KEY\"\;
 echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
 echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
 

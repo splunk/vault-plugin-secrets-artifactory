@@ -2,10 +2,11 @@ package artifactorysecrets
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfig(t *testing.T) {
@@ -14,7 +15,7 @@ func TestConfig(t *testing.T) {
 	t.Run("bearer_token", func(t *testing.T) {
 		t.Parallel()
 
-		backend, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t, true)
 
 		testConfigRead(t, backend, reqStorage, nil)
 
@@ -43,7 +44,7 @@ func TestConfig(t *testing.T) {
 	t.Run("api_key", func(t *testing.T) {
 		t.Parallel()
 
-		backend, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t, true)
 
 		testConfigRead(t, backend, reqStorage, nil)
 
@@ -66,7 +67,7 @@ func TestConfig(t *testing.T) {
 	t.Run("user_pwd", func(t *testing.T) {
 		t.Parallel()
 
-		backend, reqStorage := getTestBackend(t)
+		backend, reqStorage := getTestBackend(t, true)
 
 		testConfigRead(t, backend, reqStorage, nil)
 
@@ -96,12 +97,8 @@ func testConfigUpdate(t *testing.T, b logical.Backend, s logical.Storage, d map[
 		Data:      d,
 		Storage:   s,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp != nil && resp.IsError() {
-		t.Fatal(resp.Error())
-	}
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
 }
 
 func testConfigRead(t *testing.T, b logical.Backend, s logical.Storage, expected map[string]interface{}) {
@@ -112,25 +109,15 @@ func testConfigRead(t *testing.T, b logical.Backend, s logical.Storage, expected
 		Storage:   s,
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	if resp == nil && expected == nil {
 		return
 	}
 
-	if resp.IsError() {
-		t.Fatal(resp.Error())
-	}
-
-	if len(expected) != len(resp.Data) {
-		t.Errorf("read data mismatch (expected %d values, got %d)", len(expected), len(resp.Data))
-	}
-
-	if !reflect.DeepEqual(expected, resp.Data) {
-		t.Errorf(`expected data %v not equal actual %v"`, expected, resp.Data)
-	}
+	require.False(t, resp.IsError())
+	assert.Equal(t, len(expected), len(resp.Data), "read data mismatch")
+	assert.Equal(t, expected, resp.Data, "expected %v, actual: %v", expected, resp.Data)
 
 	if t.Failed() {
 		t.FailNow()
