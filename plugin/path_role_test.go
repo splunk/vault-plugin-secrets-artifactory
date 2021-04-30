@@ -115,6 +115,33 @@ func TestAccPathRole(t *testing.T) {
 		mustRoleCreate(req, backend, t, roleName, data)
 		mustRoleDelete(req, backend, t, roleName)
 	})
+
+	t.Run("create role failed with nonexisting repository", func(t *testing.T) {
+		req, backend := newAccEnv(t)
+		roleName := "test_role_nonexisting_repository"
+		nonexistingRepoName := "nonexisting_repo"
+		rawPt := fmt.Sprintf(`
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["%s"],
+					"operations": ["read"]
+				}
+			}
+		]
+		`, nonexistingRepoName)
+		data := map[string]interface{}{
+			"permission_targets": rawPt,
+			"name":               roleName,
+		}
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		actualErr := resp.Data["error"].(string)
+		expected := fmt.Sprintf("Permission target contains a reference to a non-existing repository '%s'", nonexistingRepoName)
+		assert.Contains(t, actualErr, expected)
+	})
 }
 
 func TestAccPathRole_Artifactory(t *testing.T) {
@@ -307,7 +334,6 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 		require.Nil(t, role)
 		require.NoError(t, err)
 	})
-
 }
 
 func TestPathRoleFail(t *testing.T) {
