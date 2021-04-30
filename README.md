@@ -81,8 +81,7 @@ username follows the format of `auto-vault-plugin-user.<role_name>`
 
 ### Update Permission Targets
 
-List of permission targets can be supplied as a JSON string. Format of a permission target can be
-found [here][permission-target-format].
+List of permission targets can be supplied as a JSON string. Format of a permission target can be below. This is derived from artifactory V2 security permission target json found [here][permission-target-format].
 
 ```json
 [

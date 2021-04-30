@@ -252,41 +252,41 @@ func pathRoleList(backend *ArtifactoryBackend) []*framework.Path {
 const pathRoleHelpSyn = `Read/write sets of permission targets to be given to generated credentials for specified role.`
 const pathRoleHelpDesc = `
 This path allows you to create roles, which bind sets of permission targets
-of specific repositories with patterns and actions to a group. Secrets are 
+of specific repositories with patterns and operations to a group. Secrets are 
 generated under a role and will have the given set of permission targets on group.
 
 The specified permission targets file accepts an JSON string
 with the following format:
 
 [
-	{
-		"repo": {
-			"include_patterns": ["**"] (default),
-			"exclude_patterns": [""] (default),
-			"repositories": ["local-repo1", "local-repo2", "remote-repo1", "virtual-repo2"],
-			"operations": ["read","annotate","write"]
-		},
-		"build": {
-			"include_patterns": ["**"] (default),
-			"exclude_patterns": [""] (default),
-			"repositories": ["artifactory-build-info"], (default, can't be changed)
-			"operations": ["manage","read","annotate"]
-		},
-	}
+  {
+    "repo": {
+      "include_patterns": ["**"] (default),
+      "exclude_patterns": [""] (default),
+      "repositories": ["local-repo1", "local-repo2", "remote-repo1", "virtual-repo2"],
+      "operations": ["read"]
+    },
+    "build": {
+      "include_patterns": ["**"] (default),
+      "exclude_patterns": [""] (default),
+      "repositories": ["artifactory-build-info"], (default, can't be changed)
+      "operations": ["manage","read","annotate"]
+    },
+  }
 ]
 
-| field | subfield 				 | required |
+| field | subfield         | required |
 | ----- | ---------------- | -------- |
-| repo  | N/A      				 | false    | 
-|  			| include_patterns | false    | 
-|  			| exclude_patterns | false    | 
-|  			| repositories	   | true   	| 
-|  			| operations		   | true	    | 
-| build | N/A      				 | false    | 
-|  			| include_patterns | false    | 
-|  			| exclude_patterns | false    | 
-|  			| repositories	   | true   	| 
-|  			| operations		   | true	    | 
+| repo  | N/A              | false    | 
+|       | include_patterns | false    | 
+|       | exclude_patterns | false    | 
+|       | repositories     | true     | 
+|       | operations       | true     | 
+| build | N/A              | false    | 
+|       | include_patterns | false    | 
+|       | exclude_patterns | false    | 
+|       | repositories     | true     | 
+|       | operations       | true     | 
 `
 
 const pathListRoleHelpSyn = `List existing roles.`
