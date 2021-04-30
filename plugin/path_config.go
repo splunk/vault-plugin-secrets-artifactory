@@ -13,7 +13,7 @@ import (
 var configSchema = map[string]*framework.FieldSchema{
 	"base_url": {
 		Type:        framework.TypeString,
-		Description: `Artifactory base url. e.g. htts://myjfrog.example.com/artifactory/`,
+		Description: `Artifactory base url. e.g. https://myjfrog.example.com/artifactory/`,
 	},
 	"bearer_token": {
 		Type:        framework.TypeString,
