@@ -13,7 +13,7 @@ import (
 var configSchema = map[string]*framework.FieldSchema{
 	"base_url": {
 		Type:        framework.TypeString,
-		Description: `Artifactory base url`,
+		Description: `Artifactory base url. e.g. htts://myjfrog.example.com/artifactory/`,
 	},
 	"bearer_token": {
 		Type:        framework.TypeString,
@@ -33,7 +33,7 @@ var configSchema = map[string]*framework.FieldSchema{
 	},
 	"max_ttl": {
 		Type:        framework.TypeDurationSecond,
-		Description: "Maximum time a token generated will be valid for. If <= 0, will use system default.",
+		Description: "Maximum time a token generated will be valid for. If <= 0, will use system default(3600).",
 		Default:     3600,
 	},
 }
@@ -129,5 +129,8 @@ Configure the Artifactory backend.
 const pathConfigHelpDesc = `
 The Artifactory backend requires credentials for managing groups and permission targets 
 and creating an access token for a group. This endpoint is used to configure
-those credentials as well as default values for the backend in general
+those credentials as well as default values for the backend in general.
+
+If multiple credentials are provided, it takes precendence on following order. 
+Bearer Token -> API Key -> Username/Password
 `

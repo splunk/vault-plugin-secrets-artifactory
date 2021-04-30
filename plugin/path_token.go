@@ -18,7 +18,7 @@ var createTokenSchema = map[string]*framework.FieldSchema{
 	},
 	"ttl": {
 		Type:        framework.TypeDurationSecond,
-		Description: "The duration in seconds after which the token will expire",
+		Description: "The duration in seconds after which the token will expire. Default 600 seconds",
 		Default:     600, // default of 10 minutes
 	},
 }
@@ -57,7 +57,7 @@ func (backend *ArtifactoryBackend) pathTokenCreateUpdate(ctx context.Context, re
 func pathToken(backend *ArtifactoryBackend) []*framework.Path {
 	paths := []*framework.Path{
 		{
-			Pattern: fmt.Sprintf("token/%s", framework.GenericNameRegex("role_name")),
+			Pattern: fmt.Sprintf("%s/%s", tokenPrefix, framework.GenericNameRegex("role_name")),
 			Fields:  createTokenSchema,
 			Callbacks: map[logical.Operation]framework.OperationFunc{
 				logical.CreateOperation: backend.pathTokenCreateUpdate,
@@ -79,6 +79,6 @@ by name - for example, if this backend is mounted at "artifactory",
 then "artifactory/token/deploy" would generate tokens for the "deploy" role.
 
 On the backend, each role is associated with a group.
-The token will be associated with this group. Tokens have a
+The token will be scoped to this group. Tokens have a
 short-term lease (default 10-mins) associated with them but cannot be renewed.
 `

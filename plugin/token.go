@@ -8,6 +8,10 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
+const (
+	tokenPrefix = "token"
+)
+
 // TokenCreateEntry is the structure for creating a token
 type TokenCreateEntry struct {
 	TTL time.Duration `json:"ttl" structs:"ttl" mapstructure:"ttl"`

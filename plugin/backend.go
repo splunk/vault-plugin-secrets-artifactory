@@ -2,6 +2,7 @@ package artifactorysecrets
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
@@ -40,6 +41,7 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 
 	backend.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
+		Help:        strings.TrimSpace(backendHelp),
 		Paths: framework.PathAppend(
 			pathConfig(backend),
 			pathRole(backend),
@@ -50,3 +52,14 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 
 	return backend
 }
+
+const backendHelp = `
+The Artifactory secrets engine dynamically generates Artifactory access token
+based on user defined permission targets. This enables users to gain access to
+Artifactory resources without needing to create or manage a dedicated Artifactory
+service account.
+
+After mounting this secrets engine, you can configure the credentials using the
+"config/" endpoints. You can generate roles using the "roles/" endpoints. You can 
+then generate credentials for roles using the "token/" endpoints. 
+`
