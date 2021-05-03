@@ -21,7 +21,7 @@ var createRoleSchema = map[string]*framework.FieldSchema{
 	"token_ttl": {
 		Type:        framework.TypeDurationSecond,
 		Description: "The TTL of the token",
-		Default:     600,
+		Default:     900,
 	},
 	"max_ttl": {
 		Type:        framework.TypeDurationSecond,
@@ -123,9 +123,17 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 	lock.RLock()
 	defer lock.RUnlock()
 
+	config, err := backend.getConfig(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain artifactory config - %s", err.Error())
+	}
+	if config == nil {
+		return nil, fmt.Errorf("artifactory backend configuration has not been set up")
+	}
+
 	role, err := getRoleEntry(ctx, req.Storage, roleName)
 	if err != nil {
-		return logical.ErrorResponse("Error reading role"), err
+		return logical.ErrorResponse("Error reading role"), nil
 	}
 
 	if role == nil {
@@ -154,17 +162,26 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		return logical.ErrorResponse("permission targets are required for new role"), nil
 	}
 
-	if ttlRaw, ok := data.GetOk("token_ttl"); ok {
-		role.TokenTTL = time.Duration(ttlRaw.(int)) * time.Second
-	} else {
-		role.TokenTTL = time.Duration(createRoleSchema["token_ttl"].Default.(int)) * time.Second
-	}
-	if maxttlRaw, ok := data.GetOk("max_ttl"); ok {
+	maxttlRaw, ok := data.GetOk("max_ttl")
+	if ok && maxttlRaw.(int) > 0 {
 		role.MaxTTL = time.Duration(maxttlRaw.(int)) * time.Second
 	} else {
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
+	ttlRaw, ok := data.GetOk("token_ttl")
+	if ok && ttlRaw.(int) > 0 {
+		role.TokenTTL = time.Duration(ttlRaw.(int)) * time.Second
+	} else {
+		role.TokenTTL = time.Duration(createRoleSchema["token_ttl"].Default.(int)) * time.Second
+	}
+
+	if role.MaxTTL > config.MaxTTL {
+		return logical.ErrorResponse(fmt.Sprintf("role max ttl is greater than config max ttl '%d'", config.MaxTTL)), nil
+	}
+	if role.TokenTTL > role.MaxTTL {
+		return logical.ErrorResponse(fmt.Sprintf("role token ttl is greater than role max ttl '%d'", role.MaxTTL)), nil
+	}
 	// If no new permission targets or new permission targets are exactly same as old permission targets,
 	// just return without updating permission targets
 	if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
@@ -275,18 +292,23 @@ with the following format:
   }
 ]
 
+At least one of repo or build is required
+
 | field | subfield         | required |
 | ----- | ---------------- | -------- |
-| repo  | N/A              | false    | 
-|       | include_patterns | false    | 
-|       | exclude_patterns | false    | 
-|       | repositories     | true     | 
-|       | operations       | true     | 
-| build | N/A              | false    | 
-|       | include_patterns | false    | 
-|       | exclude_patterns | false    | 
-|       | repositories     | true     | 
-|       | operations       | true     | 
+| repo  | N/A              | no       | 
+|       | include_patterns | no       | 
+|       | exclude_patterns | no       | 
+|       | repositories     | yes      | 
+|       | operations       | yes      | 
+| build | N/A              | no       | 
+|       | include_patterns | no       | 
+|       | exclude_patterns | no       | 
+|       | repositories     | yes      | 
+|       | operations       | yes      |
+
+Allowed operations are "read", "write", "annotate",
+"delete", "manage", "managedXrayMeta", "distribute"
 `
 
 const pathListRoleHelpSyn = `List existing roles.`

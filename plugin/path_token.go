@@ -18,8 +18,8 @@ var createTokenSchema = map[string]*framework.FieldSchema{
 	},
 	"ttl": {
 		Type:        framework.TypeDurationSecond,
-		Description: "The duration in seconds after which the token will expire. Default 600 seconds",
-		Default:     600, // default of 10 minutes
+		Description: "The duration in seconds after which the token will expire. Default 3600 seconds",
+		Default:     60 * 60,
 	},
 }
 
@@ -31,19 +31,20 @@ func (backend *ArtifactoryBackend) pathTokenCreateUpdate(ctx context.Context, re
 	// get the role by name
 	roleEntry, err := getRoleEntry(ctx, req.Storage, roleName)
 	if roleEntry == nil || err != nil {
-		return logical.ErrorResponse(fmt.Sprintf("Role name '%s' not recognised", roleName)), err
+		return logical.ErrorResponse(fmt.Sprintf("Role name '%s' not recognised", roleName)), nil
 	}
 
 	var tokenEntry TokenCreateEntry
 
-	if ttlRaw, ok := data.GetOk("ttl"); ok {
+	ttlRaw, ok := data.GetOk("ttl")
+	if ok && ttlRaw.(int) > 0 {
 		tokenEntry.TTL = time.Duration(ttlRaw.(int)) * time.Second
 	} else {
 		tokenEntry.TTL = roleEntry.TokenTTL
 	}
 
 	if tokenEntry.TTL > roleEntry.MaxTTL {
-		return logical.ErrorResponse(fmt.Sprintf("Token ttl is greater than role max ttl '%d'", roleEntry.MaxTTL)), err
+		return logical.ErrorResponse(fmt.Sprintf("Token ttl is greater than role max ttl '%d'", roleEntry.MaxTTL)), nil
 	}
 
 	token, err := backend.createTokenEntry(ctx, req.Storage, tokenEntry, roleEntry)

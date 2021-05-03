@@ -18,6 +18,7 @@ func TestAccIssueToken(t *testing.T) {
 	req, backend := newAccEnv(t)
 
 	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
+
 	roleName := "test_issue_token_role"
 	data := map[string]interface{}{
 		"name": roleName,
@@ -36,18 +37,37 @@ func TestAccIssueToken(t *testing.T) {
 	}
 	mustRoleCreate(req, backend, t, roleName, data)
 
-	resp, err := testIssueToken(req, backend, t, roleName)
-	require.NoError(t, err)
-	require.False(t, resp.IsError())
+	t.Run("success", func(t *testing.T) {
+		d := make(map[string]interface{})
+		d["role_name"] = roleName
+		resp, err := testIssueToken(req, backend, t, roleName, d)
+		require.NoError(t, err)
+		require.False(t, resp.IsError())
 
-	assert.NotEmpty(t, resp.Data["access_token"], "no token returned")
-	assert.NotEmpty(t, resp.Data["username"], "no username returned")
+		assert.NotEmpty(t, resp.Data["access_token"], "no token returned")
+		assert.NotEmpty(t, resp.Data["username"], "no username returned")
+	})
+
+	t.Run("exceed_ttl", func(t *testing.T) {
+		d := make(map[string]interface{})
+		d["role_name"] = roleName
+		d["ttl"] = "7200s"
+		resp, err := testIssueToken(req, backend, t, roleName, d)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
+
+		actualErr := resp.Data["error"].(string)
+		expected := "Token ttl is greater than role max ttl"
+		assert.Contains(t, actualErr, expected)
+	})
+
 }
 
 // create the token given the parameters
-func testIssueToken(req *logical.Request, b logical.Backend, t *testing.T, roleName string) (*logical.Response, error) {
+func testIssueToken(req *logical.Request, b logical.Backend, t *testing.T, roleName string, data map[string]interface{}) (*logical.Response, error) {
 	req.Operation = logical.UpdateOperation
 	req.Path = fmt.Sprintf("token/%s", roleName)
+	req.Data = data
 
 	resp, err := b.HandleRequest(context.Background(), req)
 

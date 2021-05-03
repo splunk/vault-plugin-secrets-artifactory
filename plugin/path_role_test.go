@@ -339,9 +339,15 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 func TestPathRoleFail(t *testing.T) {
 	t.Parallel()
 	req, backend := newMockEnv(t)
-	data := make(map[string]interface{})
+	conf := map[string]interface{}{
+		"base_url":     "https://example.jfrog.io/example",
+		"bearer_token": "mybearertoken",
+		"max_ttl":      "3600s",
+	}
+	testConfigUpdate(t, backend, req.Storage, conf)
 
 	t.Run("nonexistent_role", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		data["name"] = roleName
 		resp, err := testRoleRead(req, backend, t, "noname")
@@ -349,7 +355,62 @@ func TestPathRoleFail(t *testing.T) {
 		require.Nil(t, resp)
 	})
 
+	t.Run("exceed_config_max_ttl", func(t *testing.T) {
+		roleName := "test_role_max_ttl"
+		data := make(map[string]interface{})
+		rawPt := `
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["ANY"],
+					"operations": ["read", "write", "annotate"]
+				}
+			}
+		]
+		`
+		data["name"] = roleName
+		data["max_ttl"] = "7200s"
+		data["permission_targets"] = rawPt
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
+
+		actualErr := resp.Data["error"].(string)
+		expected := "role max ttl is greater than config max ttl"
+		assert.Contains(t, actualErr, expected)
+	})
+
+	t.Run("exceed_role_max_ttl", func(t *testing.T) {
+		data := make(map[string]interface{})
+		roleName := "test_role_token_ttl"
+		rawPt := `
+		[
+			{
+				"repo": {
+					"include_patterns": ["/mytest/**"],
+					"exclude_patterns": [""],
+					"repositories": ["ANY"],
+					"operations": ["read", "write", "annotate"]
+				}
+			}
+		]
+		`
+		data["name"] = roleName
+		data["token_ttl"] = "7200s"
+		data["permission_targets"] = rawPt
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.True(t, resp.IsError(), "expecting error")
+
+		actualErr := resp.Data["error"].(string)
+		expected := "role token ttl is greater than role max ttl"
+		assert.Contains(t, actualErr, expected)
+	})
+
 	t.Run("no_permission_targets_for_new_role", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		resp, err := testRoleCreate(req, backend, t, roleName, data)
 		require.NoError(t, err)
@@ -361,6 +422,7 @@ func TestPathRoleFail(t *testing.T) {
 	})
 
 	t.Run("empty_permission_targets", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		data["permission_targets"] = ""
 		resp, err := testRoleCreate(req, backend, t, roleName, data)
@@ -373,6 +435,7 @@ func TestPathRoleFail(t *testing.T) {
 	})
 
 	t.Run("unmarshable_permission_target", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		data["permission_targets"] = 60
 		data["name"] = roleName
@@ -386,6 +449,7 @@ func TestPathRoleFail(t *testing.T) {
 	})
 
 	t.Run("permission_target_empty_required_field", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		rawPt := `
 		[
@@ -411,6 +475,7 @@ func TestPathRoleFail(t *testing.T) {
 	})
 
 	t.Run("permission_target_invalid_operation", func(t *testing.T) {
+		data := make(map[string]interface{})
 		roleName := "test_role1"
 		rawPt := `
 		[

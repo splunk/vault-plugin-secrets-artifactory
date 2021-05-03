@@ -85,7 +85,8 @@ func (backend *ArtifactoryBackend) pathConfigWrite(ctx context.Context, req *log
 		cfg.Password = password.(string)
 	}
 
-	if maxTTLRaw, ok := data.GetOk("max_ttl"); ok {
+	maxTTLRaw, ok := data.GetOk("max_ttl")
+	if ok && maxTTLRaw.(int) > 0 {
 		cfg.MaxTTL = time.Duration(maxTTLRaw.(int)) * time.Second
 	} else {
 		cfg.MaxTTL = time.Duration(configSchema["max_ttl"].Default.(int)) * time.Second
