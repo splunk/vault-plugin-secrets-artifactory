@@ -1,8 +1,6 @@
 package artifactorysecrets
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -85,7 +83,7 @@ func validateOperations(ops []string) error {
 	return err.ErrorOrNil()
 }
 
-func getStringHash(ptsRaw string) string {
-	ssum := sha256.Sum256([]byte(ptsRaw))
-	return base64.StdEncoding.EncodeToString(ssum[:])
-}
+// func getStringHash(ptsRaw string) string {
+// 	ssum := sha256.Sum256([]byte(ptsRaw))
+// 	return base64.StdEncoding.EncodeToString(ssum[:])
+// }

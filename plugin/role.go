@@ -65,9 +65,9 @@ func (role RoleStorageEntry) save(ctx context.Context, storage logical.Storage) 
 	return storage.Put(ctx, entry)
 }
 
-func (role RoleStorageEntry) permissionTargetsHash() string {
-	return getStringHash(role.RawPermissionTargets)
-}
+// func (role RoleStorageEntry) permissionTargetsHash() string {
+// 	return getStringHash(role.RawPermissionTargets)
+// }
 
 // get or create the basic lock for the role name
 func (backend *ArtifactoryBackend) roleLock(roleName string) *locksutil.LockEntry {
