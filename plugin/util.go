@@ -1,6 +1,7 @@
 package artifactorysecrets
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
@@ -9,8 +10,10 @@ import (
 )
 
 const (
-	pluginPrefix        = "vault-plugin"
-	tokenUsernamePrefix = "auto-vault-plugin"
+	pluginPrefix         = "vault-plugin"
+	tokenUsernamePrefix  = "auto-vault-plugin"
+	tokenUsernameMaxLen  = 58
+	tokenUsernameHashLen = 8
 )
 
 func groupName(roleEntry *RoleStorageEntry) string {
@@ -22,7 +25,14 @@ func permissionTargetName(roleName string, index int) string {
 }
 
 func tokenUsername(roleName string) string {
-	return fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
+	fullUsername := fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
+	tokenUser := fullUsername
+	if len(fullUsername) > tokenUsernameMaxLen {
+		truncIndex := tokenUsernameMaxLen - tokenUsernameHashLen
+		h := fmt.Sprintf("%x", sha256.Sum256([]byte(fullUsername[truncIndex:])))
+		tokenUser = fullUsername[:truncIndex] + h[:tokenUsernameHashLen]
+	}
+	return tokenUser
 }
 
 // appendTrailingSlash appends trailing slash if url doesn't end with slash.

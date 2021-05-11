@@ -110,6 +110,42 @@ func TestConvertPermissionTarget(t *testing.T) {
 	})
 }
 
+func TestTokenUserName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "token username less than max size",
+			input: "rolename-long-but-less-than-max",
+			want:  "auto-vault-plugin.rolename-long-but-less-than-max",
+		},
+		{
+			name:  "token username less than max size",
+			input: "rolename-too-long-to-fit-into-artifactory-token-username",
+			want:  "auto-vault-plugin.rolename-too-long-to-fit-into-ara8c837ff",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := tokenUsername(test.input)
+			checkTokenUsernameLength(t, got)
+			if got != test.want {
+				t.Errorf("token username: %v, want %v", got, test.want)
+			}
+		})
+
+	}
+}
+
+func checkTokenUsernameLength(t *testing.T, username string) {
+	if len(username) > tokenUsernameMaxLen {
+		t.Errorf("Expected token username to be less than or equal to %v, actual name '%v'", tokenUsernameMaxLen, username)
+	}
+}
+
 func envOrDefault(key, d string) string {
 	env := os.Getenv(key)
 	if env == "" {
