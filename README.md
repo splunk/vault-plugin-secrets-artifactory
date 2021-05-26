@@ -82,7 +82,8 @@ Token is generated with a transient user and returned as key value pair:
 | access_token | REDACTED_BEARER_TOKEN            |
 | username     | `auto-vault-plugin-user.ci-role` |
 
-username follows the format of `auto-vault-plugin-user.<role_name>`
+username follows the format of `auto-vault-plugin-user.<role_name>`  
+*note: if role name exceeds 39 characters, it shortens to fit into max char constraints*
 
 ### Update Permission Targets
 
