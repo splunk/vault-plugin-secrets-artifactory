@@ -526,8 +526,7 @@ func assertPermissionTargetDeleted(t *testing.T, ac artifactory.ArtifactoryServi
 	ptName := permissionTargetName(role.Name, permissionTargetIndex)
 	actual, err := ac.GetPermissionTarget(ptName)
 	assert.Nil(t, actual)
-	assert.Error(t, err, "Artifactory should throw an error")
-	assert.Contains(t, err.Error(), "404 Not Found")
+	assert.NoError(t, err)
 }
 
 func assertGroupDeleted(t *testing.T, ac artifactory.ArtifactoryServicesManager, role *RoleStorageEntry) {

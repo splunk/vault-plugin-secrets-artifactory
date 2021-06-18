@@ -1,7 +1,7 @@
 [
   {
     "repo": {
-      "include_patterns": ["/mydocker2/**", "/newpath/prefix/**"] ,
+      "include_patterns": ["@my-scoped/my-scoped-package/**"] ,
       "exclude_patterns": [""],
       "repositories": ["npm-test-west-local", "npm-test-east-local"],
       "operations": ["read", "write", "annotate"]
@@ -11,8 +11,16 @@
     "repo": {
       "include_patterns": ["**"] ,
       "exclude_patterns": [""],
-      "repositories": ["npm-test-west-local", "npm-test-east-local"],
+      "repositories": ["npm-test-west-local", "npm-test-east-local","npm-west-local", "npm-east-local"],
       "operations": ["read"]
+    }
+  },
+  {
+    "repo": {
+      "include_patterns": ["**"] ,
+      "exclude_patterns": [""],
+      "repositories": ["npm-remote"],
+      "operations": ["read", "write", "annotate"]
     }
   }
 ]

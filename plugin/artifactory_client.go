@@ -3,7 +3,6 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
@@ -99,15 +98,6 @@ func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) error {
 }
 
 func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error {
-	// params, err := ac.client.GetPermissionTarget(ptName)
-	// if ignoreNotFound(err) != nil {
-	// 	return err
-	// }
-
-	// if params != nil {
-	// 	// update logic
-	// }
-	// return ac.client.CreatePermissionTarget(*params)
 	params := services.PermissionTargetParams{}
 	convertPermissionTarget(pt, &params, groupName(role), ptName)
 
@@ -116,7 +106,7 @@ func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEnt
 
 func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
 	params, err := ac.client.GetPermissionTarget(ptName)
-	if ignoreNotFound(err) != nil {
+	if err != nil {
 		return err
 	}
 	if params != nil {
@@ -133,19 +123,4 @@ func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleSt
 	}
 
 	return ac.client.CreateToken(params)
-}
-
-// This is temporary until Get Permission Target API returns nil err in case NotFound
-// https://github.com/jfrog/jfrog-client-go/pull/337
-func ignoreNotFound(err error) error {
-	if err == nil {
-		return err
-	}
-	// API error in case status is not 200 OK
-	// "Artifactory response: " + resp.Status + "yadayadaya"
-	notFoundStatus := 404
-	if strings.Contains(err.Error(), fmt.Sprintf("Artifactory response: %d", notFoundStatus)) {
-		return nil
-	}
-	return err
 }
