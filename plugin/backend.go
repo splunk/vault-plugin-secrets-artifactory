@@ -24,7 +24,7 @@ func (b *ArtifactoryBackend) getClient(ctx context.Context, s logical.Storage) (
 	unlockFunc := b.lock.RUnlock
 	defer func() { unlockFunc() }()
 
-	if b.client.Valid() {
+	if b.client != nil && b.client.Valid() {
 		return b.client, nil
 	}
 
@@ -32,7 +32,7 @@ func (b *ArtifactoryBackend) getClient(ctx context.Context, s logical.Storage) (
 	b.lock.Lock()
 	unlockFunc = b.lock.Unlock
 
-	if b.client.Valid() {
+	if b.client != nil && b.client.Valid() {
 		return b.client, nil
 	}
 
@@ -78,7 +78,6 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 	backend := &ArtifactoryBackend{
 		view:      conf.StorageView,
 		roleLocks: locksutil.CreateLocks(),
-		client:    NewArtifactoryClient(),
 	}
 
 	backend.Backend = &framework.Backend{

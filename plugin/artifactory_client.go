@@ -33,10 +33,6 @@ type artifactoryClient struct {
 
 var _ Client = &artifactoryClient{}
 
-func NewArtifactoryClient() Client {
-	return &artifactoryClient{}
-}
-
 func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) {
 	if config == nil {
 		return nil, fmt.Errorf("artifactory backend configuration has not been set up")
