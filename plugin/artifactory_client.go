@@ -3,6 +3,7 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
@@ -11,20 +12,30 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
+const (
+	clientTTL = 30 * time.Minute
+)
+
 type Client interface {
 	CreateOrReplaceGroup(role *RoleStorageEntry) error
 	DeleteGroup(role *RoleStorageEntry) error
 	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error
 	DeletePermissionTarget(ptName string) error
 	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error)
+	Valid() bool
 }
 
 type artifactoryClient struct {
-	client  artifactory.ArtifactoryServicesManager
-	context context.Context
+	client     artifactory.ArtifactoryServicesManager
+	context    context.Context
+	expiration time.Time
 }
 
 var _ Client = &artifactoryClient{}
+
+func NewArtifactoryClient() Client {
+	return &artifactoryClient{}
+}
 
 func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) {
 	if config == nil {
@@ -32,7 +43,8 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 	}
 
 	ac := &artifactoryClient{
-		context: ctx,
+		context:    ctx,
+		expiration: time.Now().Add(clientTTL),
 	}
 
 	// TODO: need to figure out
@@ -69,6 +81,10 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 	ac.client = client
 
 	return ac, nil
+}
+
+func (ac *artifactoryClient) Valid() bool {
+	return ac != nil && time.Now().Before(ac.expiration)
 }
 
 func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {

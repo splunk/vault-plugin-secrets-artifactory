@@ -101,6 +101,10 @@ type mockArtifactoryClient struct{}
 
 var _ Client = &mockArtifactoryClient{}
 
+func (ac *mockArtifactoryClient) Valid() bool {
+	return true
+}
+
 func (ac *mockArtifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
 	return nil
 }
@@ -126,10 +130,7 @@ func mustGetAccClient(ctx context.Context, t *testing.T, req *logical.Request, b
 	backend, ok := b.(*ArtifactoryBackend)
 	require.True(t, ok, "invalid backend implementation")
 
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	require.NoError(t, err, "config err: %s", err)
-
-	ac, err := backend.getClient(ctx, cfg)
+	ac, err := backend.getClient(ctx, req.Storage)
 	require.NoError(t, err, "Artifactory client error: %s", err)
 
 	// get the actual Jfrog Client

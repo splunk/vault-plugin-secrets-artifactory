@@ -81,12 +81,7 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 
 	oldPts := role.PermissionTargets
 
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	if err != nil {
-		return nil, fmt.Errorf("failed to obtain artifactory config - %s", err.Error())
-	}
-
-	ac, err := backend.getClient(ctx, cfg)
+	ac, err := backend.getClient(ctx, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain artifactory client - %s", err.Error())
 	}
@@ -162,12 +157,7 @@ func (backend *ArtifactoryBackend) tryDeleteRoleResources(ctx context.Context, r
 		backend.Logger().Debug("skip deletion for empty permission targets")
 	}
 
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	if err != nil {
-		return fmt.Errorf("failed to obtain artifactory config - %s", err.Error())
-	}
-
-	ac, err := backend.getClient(ctx, cfg)
+	ac, err := backend.getClient(ctx, req.Storage)
 	if err != nil {
 		return fmt.Errorf("failed to obtain artifactory client - %s", err.Error())
 	}
