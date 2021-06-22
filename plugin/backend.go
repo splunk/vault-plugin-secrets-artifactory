@@ -3,6 +3,7 @@ package artifactorysecrets
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
@@ -12,14 +13,55 @@ import (
 // ArtifactoryBackend is the backend for artifactory plugin
 type ArtifactoryBackend struct {
 	*framework.Backend
-	view logical.Storage
-
-	getClient func(ctx context.Context, config *ConfigStorageEntry) (Client, error)
-
-	// Locks for guarding service clients
-	// clientMutex sync.RWMutex
-
+	view      logical.Storage
+	client    Client
+	lock      sync.RWMutex
 	roleLocks []*locksutil.LockEntry
+}
+
+func (b *ArtifactoryBackend) getClient(ctx context.Context, s logical.Storage) (Client, error) {
+	b.lock.RLock()
+	unlockFunc := b.lock.RUnlock
+	defer func() { unlockFunc() }()
+
+	if b.client != nil && b.client.Valid() {
+		return b.client, nil
+	}
+
+	b.lock.RUnlock()
+	b.lock.Lock()
+	unlockFunc = b.lock.Unlock
+
+	if b.client != nil && b.client.Valid() {
+		return b.client, nil
+	}
+
+	config, err := b.getConfig(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := NewClient(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	b.client = c
+
+	return c, nil
+}
+
+func (b *ArtifactoryBackend) reset() {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	b.client = nil
+}
+
+func (b *ArtifactoryBackend) invalidate(ctx context.Context, key string) {
+	switch key {
+	case configPrefix:
+		b.reset()
+	}
 }
 
 // Factory is factory for backend
@@ -36,7 +78,6 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 	backend := &ArtifactoryBackend{
 		view:      conf.StorageView,
 		roleLocks: locksutil.CreateLocks(),
-		getClient: NewClient,
 	}
 
 	backend.Backend = &framework.Backend{
@@ -48,6 +89,7 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 			pathRoleList(backend),
 			pathToken(backend),
 		),
+		Invalidate: backend.invalidate,
 	}
 
 	return backend

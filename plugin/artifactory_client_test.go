@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/jfrog/jfrog-client-go/artifactory"
@@ -86,6 +87,7 @@ func TestAccNewClient(t *testing.T) {
 			c, err := NewClient(ctx, test.config)
 			assert.NoError(t, err)
 			assert.NotNil(t, c)
+			assert.True(t, c.Valid())
 			ac, ok := c.(*artifactoryClient)
 			require.True(ok)
 
@@ -97,9 +99,45 @@ func TestAccNewClient(t *testing.T) {
 	}
 }
 
+func TestValid(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		client   *artifactoryClient
+		asserter assert.BoolAssertionFunc
+	}{
+		{
+			name: "valid",
+			client: &artifactoryClient{
+				expiration: time.Now().Add(clientTTL),
+			},
+			asserter: assert.True,
+		},
+		{
+			name: "expired ttl",
+			client: &artifactoryClient{
+				expiration: time.Now().Add(-1 * time.Minute),
+			},
+			asserter: assert.False,
+		},
+	}
+
+	for _, test := range tests {
+		test := test // capture range var
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			test.asserter(t, test.client.Valid())
+		})
+	}
+}
+
 type mockArtifactoryClient struct{}
 
 var _ Client = &mockArtifactoryClient{}
+
+func (ac *mockArtifactoryClient) Valid() bool {
+	return true
+}
 
 func (ac *mockArtifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
 	return nil
@@ -126,10 +164,7 @@ func mustGetAccClient(ctx context.Context, t *testing.T, req *logical.Request, b
 	backend, ok := b.(*ArtifactoryBackend)
 	require.True(t, ok, "invalid backend implementation")
 
-	cfg, err := backend.getConfig(ctx, req.Storage)
-	require.NoError(t, err, "config err: %s", err)
-
-	ac, err := backend.getClient(ctx, cfg)
+	ac, err := backend.getClient(ctx, req.Storage)
 	require.NoError(t, err, "Artifactory client error: %s", err)
 
 	// get the actual Jfrog Client

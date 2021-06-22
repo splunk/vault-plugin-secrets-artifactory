@@ -19,9 +19,7 @@ func getTestBackend(t *testing.T, mockArtifactory bool) (logical.Backend, logica
 	require.NoError(t, err, "unable to create backend")
 
 	if mockArtifactory {
-		b.(*ArtifactoryBackend).getClient = func(ctx context.Context, c *ConfigStorageEntry) (Client, error) {
-			return &mockArtifactoryClient{}, nil
-		}
+		b.(*ArtifactoryBackend).client = &mockArtifactoryClient{}
 	}
 
 	return b, config.StorageView
