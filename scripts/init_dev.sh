@@ -55,4 +55,4 @@ echo export VAULT_ADDR=\"$VAULT_ADDR\"\;
 echo export VAULT_TOKEN=\"$VAULT_TOKEN\"\;
 
 echo -e "\nExample usage to test plugin:" >&2
-echo -e "\033[0;32mvault write artifactory/roles/role1 token_ttl=600 permission_targets=@scripts/sample_permission_targets.json\033[0m\n" >&2
+echo -e "\033[0;32mvault write artifactory-cloud/roles/role1 token_ttl=600 permission_targets=@scripts/sample_permission_targets.json\033[0m\n" >&2

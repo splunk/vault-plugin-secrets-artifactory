@@ -47,7 +47,7 @@ func TestAccPathRole(t *testing.T) {
 	t.Run("create_multiple_role", func(t *testing.T) {
 		req, backend := newAccEnv(t)
 
-		for i := 1; i < 100; i++ {
+		for i := 1; i < 10; i++ {
 			roleName := fmt.Sprintf("role_%d", i)
 			data := map[string]interface{}{
 				"permission_targets": rawPt,
