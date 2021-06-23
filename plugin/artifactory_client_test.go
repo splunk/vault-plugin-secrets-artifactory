@@ -16,17 +16,16 @@ import (
 
 func TestNewClientFail(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 	t.Run("no_config", func(t *testing.T) {
 
-		c, err := NewClient(ctx, nil)
+		c, err := NewClient(nil)
 		assert.Error(t, err, "nil config should thrown an error when retrieving Artifactory client")
 		assert.Nil(t, c)
 	})
 
 	t.Run("empty_config", func(t *testing.T) {
 		config := &ConfigStorageEntry{}
-		c, err := NewClient(ctx, config)
+		c, err := NewClient(config)
 		assert.Error(t, err, "NewClient should return an error if config is missing auth")
 		assert.Nil(t, c, "NewClient should return nil client on error")
 	})
@@ -34,7 +33,6 @@ func TestNewClientFail(t *testing.T) {
 
 func TestAccNewClient(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 	if testing.Short() {
 		t.Skip("skipping integration test (short)")
 	}
@@ -84,7 +82,7 @@ func TestAccNewClient(t *testing.T) {
 		test := test // capture range var
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			c, err := NewClient(ctx, test.config)
+			c, err := NewClient(test.config)
 			assert.NoError(t, err)
 			assert.NotNil(t, c)
 			assert.True(t, c.Valid())

@@ -27,19 +27,17 @@ type Client interface {
 
 type artifactoryClient struct {
 	client     artifactory.ArtifactoryServicesManager
-	context    context.Context
 	expiration time.Time
 }
 
 var _ Client = &artifactoryClient{}
 
-func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) {
+func NewClient(config *ConfigStorageEntry) (Client, error) {
 	if config == nil {
 		return nil, fmt.Errorf("artifactory backend configuration has not been set up")
 	}
 
 	ac := &artifactoryClient{
-		context:    ctx,
 		expiration: time.Now().Add(clientTTL),
 	}
 
@@ -60,10 +58,11 @@ func NewClient(ctx context.Context, config *ConfigStorageEntry) (Client, error) 
 		return nil, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
 	}
 
+	// Note: do not reuse Vault request context here as this client is cached between requests.
 	artifactoryServiceConfig, err := artconfig.NewConfigBuilder().
 		SetServiceDetails(artifactoryDetails).
 		// SetDryRun(false).
-		SetContext(ctx).
+		SetContext(context.Background()).
 		SetThreads(1).
 		Build()
 	if err != nil {

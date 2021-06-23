@@ -41,7 +41,7 @@ func (b *ArtifactoryBackend) getClient(ctx context.Context, s logical.Storage) (
 		return nil, err
 	}
 
-	c, err := NewClient(ctx, config)
+	c, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
