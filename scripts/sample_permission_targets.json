@@ -1,7 +1,7 @@
 [
   {
     "repo": {
-      "include_patterns": ["@my-scoped/my-scoped-package/**"] ,
+      "include_patterns": ["@my-scoped/my-scoped-package/**"],
       "exclude_patterns": [""],
       "repositories": ["npm-test-west-local", "npm-test-east-local"],
       "operations": ["read", "write", "annotate"]
@@ -9,19 +9,18 @@
   },
   {
     "repo": {
-      "include_patterns": ["**"] ,
+      "include_patterns": ["**"],
       "exclude_patterns": [""],
-      "repositories": ["npm-test-west-local", "npm-test-east-local","npm-west-local", "npm-east-local"],
+      "repositories": ["npm-test-west-local", "npm-test-east-local"],
       "operations": ["read"]
     }
   },
   {
     "repo": {
-      "include_patterns": ["**"] ,
+      "include_patterns": ["**"],
       "exclude_patterns": [""],
-      "repositories": ["npm-remote"],
+      "repositories": ["docker-test-west-local", "docker-test-east-local"],
       "operations": ["read", "write", "annotate"]
     }
   }
 ]
-

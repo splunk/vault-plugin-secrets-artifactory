@@ -9,7 +9,7 @@ export VAULT_TOKEN=root
 
 setup_vault() {
   plugin=vault-artifactory-secrets-plugin
-  existing=$(vault secrets list -format json | jq -r '."artifactory/"')
+  existing=$(vault secrets list -format json | jq -r '."artifactory-cloud/"')
   if [ "$existing" == "null" ]; then
 
     # in CI, current container bind mount is rprivate, preventing nested bind mounts
@@ -23,7 +23,7 @@ setup_vault() {
     fi
 
     echo "Enabling vault artifactory plugin..."
-    vault secrets enable -path=artifactory $plugin
+    vault secrets enable -path=artifactory-cloud $plugin
 
   else
     echo
@@ -35,9 +35,9 @@ setup_vault() {
     echo "ARTIFACTORY_BEARER_TOKEN unset, using username/password"
   : ${ARTIFACTORY_USERNAME:?unset}
   : ${ARTIFACTORY_PASSWORD:?unset}
-    vault write artifactory/config base_url=$ARTIFACTORY_URL username=$ARTIFACTORY_USERNAME password=$ARTIFACTORY_PASSWORD ttl=600 max_ttl=600
+    vault write artifactory-cloud/config base_url=$ARTIFACTORY_URL username=$ARTIFACTORY_USERNAME password=$ARTIFACTORY_PASSWORD ttl=600 max_ttl=600
   else
-    vault write artifactory/config base_url=$ARTIFACTORY_URL bearer_token=$ARTIFACTORY_BEARER_TOKEN ttl=600 max_ttl=600
+    vault write artifactory-cloud/config base_url=$ARTIFACTORY_URL bearer_token=$ARTIFACTORY_BEARER_TOKEN ttl=600 max_ttl=24h
   fi
 }
 
