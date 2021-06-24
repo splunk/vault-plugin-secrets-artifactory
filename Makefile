@@ -24,10 +24,10 @@ lint: .tools/golangci-lint
 test:
 	go test -parallel=10 -v -covermode=count -coverprofile=coverage_unit.out ./... $(TESTARGS)
 
-testacc-artifactory: tools build-linux
+test-artacc: tools
 	@(export ARTIFACTORY_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage_artacc.out ./... -run=TestArtAcc)
 
-testacc-vault: tools build-linux
+test-vaultacc: tools build-linux
 	@(export VAULT_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v ./... -run=TestVaultAcc)
 
 report: .tools/gocover-cobertura .tools/gocovmerge
@@ -80,4 +80,4 @@ tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .
 	curl -so .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
 	(cd .tools && unzip -o vault.zip && rm vault.zip)
 
-.PHONY: all get build build-linux publish lint test testacc-artifactory testacc-vault report vault-only dev clean-dev clean-all tools
+.PHONY: all get build build-linux publish lint test test-artacc test-vaultacc report vault-only dev clean-dev clean-all tools
