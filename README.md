@@ -18,10 +18,11 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
   - [Developing with an existing Artifactory instance](#developing-with-an-existing-artifactory-instance)
   - [Tests](#tests)
 - [Roadmap](#roadmap)
+- [LICENSE](#license)
 
 ## Requirements
 
-- Go: 1.6 or above
+- Go: 1.16 or above
 - **Artifactory: 6.6.0** or above for API V2 support.
 - **Artifactory Pro or above is required** for the [API endpoints][artifactory-api-ref] used by
   this plugin. A license key will be needed to spin up the full dev environment.
@@ -206,7 +207,9 @@ This plugin is being initially developed for an internal application at Splunk f
 ephemeral credentials. No user or service account should be able to publish production artifacts
 with a static credential.
 
-Merge requests, issues and comments are always welcome.
+## License
+
+[Apache Software License version 2.0](LICENSE)
 
 [artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#
