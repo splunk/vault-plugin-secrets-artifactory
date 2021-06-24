@@ -189,8 +189,11 @@ make test
 # run subset of tests
 make test TESTARGS='-run=TestConfig'
 
-# run integration tests (spins up local vault and artifactory instance)
-make integration-test
+# run Artifactory acceptance tests (uses in-memory vault backend with Artifactory Docker container)
+make test-artacc
+
+# run Vault acceptance tests (uses Vault and Artifactory Docker containers against the compiled plugin)
+make test-vaultacc
 
 # generate a code coverage report
 make report

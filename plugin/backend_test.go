@@ -25,8 +25,8 @@ func getTestBackend(t *testing.T, mockArtifactory bool) (logical.Backend, logica
 	return b, config.StorageView
 }
 
-// newAccEnv returns a new request and test backend with a real Artifactory configured
-func newAccEnv(t *testing.T) (*logical.Request, logical.Backend) {
+// newArtAccEnv returns a new request and test backend with a real Artifactory configured
+func newArtAccEnv(t *testing.T) (*logical.Request, logical.Backend) {
 	t.Helper()
 
 	backend, storage := getTestBackend(t, false)
@@ -46,8 +46,8 @@ func newAccEnv(t *testing.T) (*logical.Request, logical.Backend) {
 	return req, backend
 }
 
-// newMockEnv returns a new request and test bacekdn with mocked Artifactory client
-func newMockEnv(t *testing.T) (*logical.Request, logical.Backend) {
+// newArtMockEnv returns a new request and test backend with mocked Artifactory client
+func newArtMockEnv(t *testing.T) (*logical.Request, logical.Backend) {
 	t.Helper()
 	backend, storage := getTestBackend(t, true)
 

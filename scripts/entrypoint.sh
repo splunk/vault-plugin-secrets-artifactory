@@ -5,6 +5,13 @@
 
 set -uo pipefail
 
+if [ $# -lt 1 ]; then
+  echo "missing args: make target"
+  exit 1
+fi
+
+target=${1}
+
 echo "Current directory:"
 pwd
 
@@ -14,7 +21,7 @@ if [ "$CI_DEBUG_TRACE" = true ]; then
 fi
 set -u
 
-make integration-test report
+make $target
 exit_code=$?
 
 # any additional logic/debugging can go here
