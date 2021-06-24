@@ -28,7 +28,7 @@ testacc-artifactory: tools build-linux
 	@(export ARTIFACTORY_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage_artacc.out ./... -run=TestArtAcc)
 
 testacc-vault: tools build-linux
-	@(export VAULT_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage_vaultacc.out ./... -run=TestVaultAcc)
+	@(export VAULT_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v ./... -run=TestVaultAcc)
 
 report: .tools/gocover-cobertura .tools/gocovmerge
 	.tools/gocovmerge coverage_*.out > coverage.out

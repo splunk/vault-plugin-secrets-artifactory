@@ -27,5 +27,5 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: root
       VAULT_DISABLE_MLOCK: "true"
     volumes:
-      - ../plugins:/vault/plugins
+      - /vault/plugins
     network_mode: "host"
