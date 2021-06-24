@@ -21,7 +21,7 @@
 
 set -euxo pipefail
 
-entrypoint_script="$1"
+entrypoint_arg="$1"
 
 # this section ensures that credentials are written under $(pwd) such that it is part of the
 # shared volume and can be seen by the container we run.
@@ -56,7 +56,8 @@ docker run --rm \
   --env-file tmp/vars.txt \
   --volumes-from=${pid} \
   -w $(pwd) \
-  --entrypoint $(pwd)/scripts/${entrypoint_script} \
-  ${image}
+  --entrypoint $(pwd)/scripts/entrypoint.sh \
+  ${image} \
+  ${entrypoint_arg}
 
 

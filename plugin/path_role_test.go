@@ -3,6 +3,7 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -13,10 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccPathRole(t *testing.T) {
+func TestArtAccPathRole(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("skipping integration test (short)")
+	if os.Getenv(envVarRunArtAccTests) == "" {
+		t.Skip("skipping Artifactory acceptance test (ARTIFACTORY_ACC env var not set)")
 	}
 
 	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
@@ -34,7 +35,7 @@ func TestAccPathRole(t *testing.T) {
 	`, repo)
 
 	t.Run("create_role", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 
 		roleName := "test_create_role"
 		data := map[string]interface{}{
@@ -45,7 +46,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("create_multiple_role", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 
 		for i := 1; i < 10; i++ {
 			roleName := fmt.Sprintf("role_%d", i)
@@ -61,7 +62,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("get_role", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 
 		roleName := "test_get_role"
 		data := map[string]interface{}{
@@ -81,7 +82,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("update_role_without_change", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		roleName := "test_update_role"
 		data := map[string]interface{}{
 			"permission_targets": rawPt,
@@ -92,7 +93,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("list_roles", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 
 		roleName1 := "test_list_role1"
 		roleName2 := "test_list_role2"
@@ -120,7 +121,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("delete_role", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 
 		roleName := "test_delete_role"
 		data := map[string]interface{}{
@@ -133,7 +134,7 @@ func TestAccPathRole(t *testing.T) {
 	})
 
 	t.Run("create role failed with nonexisting repository", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		roleName := "test_role_nonexisting_repository"
 		nonexistingRepoName := "nonexisting_repo"
 		rawPt := fmt.Sprintf(`
@@ -160,10 +161,10 @@ func TestAccPathRole(t *testing.T) {
 	})
 }
 
-func TestAccPathRole_Artifactory(t *testing.T) {
+func TestArtAccPermissionTargets(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("skipping integration test (short)")
+	if os.Getenv(envVarRunArtAccTests) == "" {
+		t.Skip("skipping Artifactory acceptance test (ARTIFACTORY_ACC env var not set)")
 	}
 
 	ctx := context.Background()
@@ -182,7 +183,7 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 	`, repo)
 
 	t.Run("modify_permission_target", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		ac := mustGetAccClient(ctx, t, req, backend)
 
 		roleName := "test_modify_permission_target_role"
@@ -219,7 +220,7 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 	})
 
 	t.Run("append_permission_target", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		ac := mustGetAccClient(ctx, t, req, backend)
 
 		roleName := "test_modify_permission_target_role"
@@ -265,7 +266,7 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 	})
 
 	t.Run("delete_permission_target", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		ac := mustGetAccClient(ctx, t, req, backend)
 
 		roleName := "test_delete_permission_target_role"
@@ -326,7 +327,7 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 	})
 
 	t.Run("delete_role_removes_resources", func(t *testing.T) {
-		req, backend := newAccEnv(t)
+		req, backend := newArtAccEnv(t)
 		ac := mustGetAccClient(ctx, t, req, backend)
 
 		roleName := "test_delete_role"
@@ -354,7 +355,7 @@ func TestAccPathRole_Artifactory(t *testing.T) {
 
 func TestPathRoleFail(t *testing.T) {
 	t.Parallel()
-	req, backend := newMockEnv(t)
+	req, backend := newArtMockEnv(t)
 	conf := map[string]interface{}{
 		"base_url":     "https://example.jfrog.io/example",
 		"bearer_token": "mybearertoken",

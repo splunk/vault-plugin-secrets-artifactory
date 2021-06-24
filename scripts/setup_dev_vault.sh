@@ -27,7 +27,7 @@ setup_vault() {
 
   else
     echo
-    echo  "Plugin enabled on path 'artifactory/':"
+    echo  "Plugin enabled on path 'artifactory-cloud/':"
     echo "$existing" | jq
   fi
 

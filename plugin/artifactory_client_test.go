@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const envVarRunArtAccTests = "ARTIFACTORY_ACC"
+
 func TestNewClientFail(t *testing.T) {
 	t.Parallel()
 	t.Run("no_config", func(t *testing.T) {
@@ -31,11 +33,12 @@ func TestNewClientFail(t *testing.T) {
 	})
 }
 
-func TestAccNewClient(t *testing.T) {
+func TestArtAccNewClient(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("skipping integration test (short)")
+	if os.Getenv(envVarRunArtAccTests) == "" {
+		t.Skip("skipping Artifactory acceptance test (ARTIFACTORY_ACC env var not set)")
 	}
+
 	baseUrl := os.Getenv("ARTIFACTORY_URL")
 	bearerToken := os.Getenv("ARTIFACTORY_BEARER_TOKEN")
 	username := os.Getenv("ARTIFACTORY_USER")

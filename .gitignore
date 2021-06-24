@@ -3,5 +3,6 @@ vault-plugin-secrets-artifactory
 .tools/
 plugins/
 coverage.*
+coverage_*
 dist/
 .go/

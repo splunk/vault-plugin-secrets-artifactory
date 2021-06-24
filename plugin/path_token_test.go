@@ -3,6 +3,7 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -10,12 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccIssueToken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test (short)")
+func TestArtAccIssueToken(t *testing.T) {
+	if os.Getenv(envVarRunArtAccTests) == "" {
+		t.Skip("skipping Artifactory acceptance test (ARTIFACTORY_ACC env var not set)")
 	}
 
-	req, backend := newAccEnv(t)
+	req, backend := newArtAccEnv(t)
 
 	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
 
