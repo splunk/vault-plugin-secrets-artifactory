@@ -30,7 +30,7 @@ eval $("$DIR/setup_dev_artifactory.sh")
 
 # if local env, configure vault plugin to talk to artifactory container hostname
 set +u
-if [ -z "$CI" ] || [ -n "$VAULT_ACC" ]; then
+if [ -z "$CI" ] && [ -n "$VAULT_ACC" ]; then
   export ARTIFACTORY_URL='http://artifactory:8081/artifactory/'
 fi
 
@@ -38,10 +38,9 @@ echo "Configuring vault..." >&2
 # eval to capture VAULT_ env vars
 eval $("$DIR/setup_dev_vault.sh")
 
-# For end-to-end tests using Vault in a Docker container, VAULT_ACC will be set and ARTIFACTORY_URL
-# will refer to container hostname.
-# For acc tests using vault test backend (non-docker), ARTIFACTORY_URL will be localhost.
-if [ -z "$VAULT_ACC" ]; then
+# For end-to-end tests running locally (not CI-pipeline), ARTIFACTORY_URL will refer to container hostname.
+# For acc tests and end-to-end tests in pipeline, ARTIFACTORY_URL will be localhost.
+if [ -n "$CI" ] && [ -z "$VAULT_ACC" ]; then
   export ARTIFACTORY_URL='http://localhost:8081/artifactory/'
 fi
 # eval output for local use

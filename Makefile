@@ -28,7 +28,7 @@ integration-test: tools build-linux
 	@(eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... $(TESTARGS))
 
 ete-test: tools build-linux
-	@(export VAULT_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v -covermode=count -coverprofile=coverage.out ./... -run=TestEte $(TESTARGS))
+	@(export VAULT_ACC=1; eval $$(./scripts/init_dev.sh) && go test -parallel=10 -v ./... -run=TestEte $(TESTARGS))
 
 report: .tools/gocover-cobertura
 	go tool cover -func=coverage.out
