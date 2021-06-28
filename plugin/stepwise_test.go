@@ -67,6 +67,57 @@ func TestVaultAccPathRole(t *testing.T) {
 	})
 }
 
+func TestVaultAccPathMultipleRoles(t *testing.T) {
+	t.Parallel()
+	if os.Getenv(envVarRunVaultAccTests) != "1" {
+		t.Skip("skipping end-to-end test (VAULT_ACC env var not set)")
+	}
+
+	envOptions := &stepwise.MountOptions{
+		RegistryName:    "vault-artifactory-secrets-plugin",
+		MountPathPrefix: "artifactory",
+	}
+
+	roleName := "ete_test_multiple_role"
+	roleName1 := roleName + "_1"
+	repo := envOrDefault("ARTIFACTORY_REPOSITORY_NAME", "ANY")
+	rawPt := fmt.Sprintf(`
+	[
+		{
+			"repo": {
+				"include_patterns": ["/mytest/**"],
+				"exclude_patterns": [""],
+				"repositories": ["%s"],
+				"operations": ["read", "write", "annotate"]
+			}
+		},
+		{
+			"repo": {
+				"include_patterns": ["/mytest-2/**"],
+				"exclude_patterns": [""],
+				"repositories": ["%s"],
+				"operations": ["read", "write", "annotate"]
+			}
+		}
+	]
+	`, repo, repo)
+
+	stepwise.Run(t, stepwise.Case{
+		Precheck:    func() { testVaultAccPreCheck(t) },
+		Environment: newEteEnv(envOptions),
+		// SkipTeardown: true,
+		Steps: []stepwise.Step{
+			testVaultAccConfig(t),
+			testVaultAccRoleCreate(t, roleName1, rawPt),
+			testVaultAccRoleCreate(t, roleName+"_2", rawPt),
+			testVaultAccRoleCreate(t, roleName+"_3", rawPt),
+			testVaultAccRoleCreate(t, roleName+"_4", rawPt),
+			testVaultAccRoleRead(t, roleName1, rawPt),
+			testVaultAccTokenUpdate(t, roleName1),
+		},
+	})
+}
+
 var initSetup sync.Once
 
 func testVaultAccPreCheck(t *testing.T) {

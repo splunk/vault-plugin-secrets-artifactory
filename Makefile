@@ -46,7 +46,7 @@ clean-dev:
 	@cd scripts && docker-compose down
 
 clean-all: clean-dev
-	@rm -rf .tools coverage.* plugins
+	@rm -rf .tools coverage*.* plugins
 
 tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .tools/golangci-lint .tools/jq .tools/vault
 
