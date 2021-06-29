@@ -179,14 +179,14 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 	maxttlRaw, ok := data.GetOk("max_ttl")
 	if ok && maxttlRaw.(int) > 0 {
 		role.MaxTTL = time.Duration(maxttlRaw.(int)) * time.Second
-	} else {
+	} else if role.MaxTTL == time.Duration(0) {
 		role.MaxTTL = time.Duration(createRoleSchema["max_ttl"].Default.(int)) * time.Second
 	}
 
 	ttlRaw, ok := data.GetOk("token_ttl")
 	if ok && ttlRaw.(int) > 0 {
 		role.TokenTTL = time.Duration(ttlRaw.(int)) * time.Second
-	} else {
+	} else if role.TokenTTL == time.Duration(0) {
 		role.TokenTTL = time.Duration(createRoleSchema["token_ttl"].Default.(int)) * time.Second
 	}
 

@@ -75,6 +75,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 	// Note: do not reuse Vault request context here as this client is cached between requests.
 	artifactoryServiceConfig, err := artconfig.NewConfigBuilder().
 		SetServiceDetails(artifactoryDetails).
+		SetHttpTimeout(config.ClientTimeout).
 		// SetDryRun(false).
 		SetContext(context.Background()).
 		SetThreads(1).

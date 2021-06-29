@@ -50,6 +50,11 @@ var configSchema = map[string]*framework.FieldSchema{
 		Description: "Maximum time a token generated will be valid for. If <= 0, will use system default(3600).",
 		Default:     3600,
 	},
+	"client_timeout": {
+		Type:        framework.TypeDurationSecond,
+		Description: "Artifactory HTTP client timeout at Transport layer. If <=0, will use system default(30).",
+		Default:     30,
+	},
 }
 
 func (backend *ArtifactoryBackend) pathConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
@@ -63,8 +68,9 @@ func (backend *ArtifactoryBackend) pathConfigRead(ctx context.Context, req *logi
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"base_url": cfg.BaseURL,
-			"max_ttl":  int64(cfg.MaxTTL / time.Second),
+			"base_url":       cfg.BaseURL,
+			"max_ttl":        int64(cfg.MaxTTL / time.Second),
+			"client_timeout": int64(cfg.ClientTimeout / time.Second),
 		},
 	}, nil
 }
@@ -102,8 +108,15 @@ func (backend *ArtifactoryBackend) pathConfigWrite(ctx context.Context, req *log
 	maxTTLRaw, ok := data.GetOk("max_ttl")
 	if ok && maxTTLRaw.(int) > 0 {
 		cfg.MaxTTL = time.Duration(maxTTLRaw.(int)) * time.Second
-	} else {
+	} else if cfg.MaxTTL == time.Duration(0) {
 		cfg.MaxTTL = time.Duration(configSchema["max_ttl"].Default.(int)) * time.Second
+	}
+
+	clientTimeoutRaw, ok := data.GetOk("client_timeout")
+	if ok && clientTimeoutRaw.(int) > 0 {
+		cfg.ClientTimeout = time.Duration(clientTimeoutRaw.(int)) * time.Second
+	} else if cfg.ClientTimeout == time.Duration(0) {
+		cfg.ClientTimeout = time.Duration(configSchema["client_timeout"].Default.(int)) * time.Second
 	}
 
 	entry, err := logical.StorageEntryJSON(configPrefix, cfg)
