@@ -34,16 +34,18 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url":     "https://example.jfrog.io/example",
-			"bearer_token": "mybearertoken",
-			"max_ttl":      "600s",
+			"base_url":       "https://example.jfrog.io/example",
+			"bearer_token":   "mybearertoken",
+			"client_timeout": "15s",
+			"max_ttl":        "600s",
 		}
 
 		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example/",
-			"max_ttl":  int64(600),
+			"base_url":       "https://example.jfrog.io/example/",
+			"client_timeout": int64(15),
+			"max_ttl":        int64(600),
 		}
 
 		testConfigRead(t, backend, reqStorage, expected)
@@ -52,6 +54,13 @@ func TestConfig(t *testing.T) {
 		})
 
 		expected["max_ttl"] = int64(50)
+		testConfigRead(t, backend, reqStorage, expected)
+
+		testConfigUpdate(t, backend, reqStorage, map[string]interface{}{
+			"client_timeout": "20s",
+		})
+
+		expected["client_timeout"] = int64(20)
 		testConfigRead(t, backend, reqStorage, expected)
 	})
 
@@ -63,16 +72,18 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example/",
-			"api_eky":  "myapikey",
-			"max_ttl":  "300s",
+			"base_url":       "https://example.jfrog.io/example/",
+			"api_eky":        "myapikey",
+			"client_timeout": "60s",
+			"max_ttl":        "300s",
 		}
 
 		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example/",
-			"max_ttl":  int64(300),
+			"base_url":       "https://example.jfrog.io/example/",
+			"client_timeout": int64(60),
+			"max_ttl":        int64(300),
 		}
 
 		testConfigRead(t, backend, reqStorage, expected)
@@ -86,17 +97,19 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example",
-			"username": "uname",
-			"password": "pwd",
-			"max_ttl":  "1h",
+			"base_url":       "https://example.jfrog.io/example",
+			"username":       "uname",
+			"password":       "pwd",
+			"client_timeout": "2m",
+			"max_ttl":        "1h",
 		}
 
 		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url": "https://example.jfrog.io/example/",
-			"max_ttl":  int64(3600),
+			"base_url":       "https://example.jfrog.io/example/",
+			"client_timeout": int64(120),
+			"max_ttl":        int64(3600),
 		}
 
 		testConfigRead(t, backend, reqStorage, expected)
