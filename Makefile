@@ -36,7 +36,7 @@ report: .tools/gocover-cobertura .tools/gocovmerge
 	go tool cover -html=coverage.out -o coverage.html
 	.tools/gocover-cobertura < coverage.out > coverage.xml
 
-vault-only:
+vault-only: build
 	vault server -log-level=debug -dev -dev-root-token-id=root -dev-plugin-dir=./plugins
 
 dev: tools build-linux
