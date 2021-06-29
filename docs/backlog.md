@@ -17,3 +17,7 @@ Client timeout should be varied by organization/artifactory instance. Sometime w
 ## HTTP Client Replacement
 
 jfrog-client-go heavily wrapps http client and doesn't leave us wiggle room to tweak. Whether we'll replace only http client or entire library and create our own is to be determined.
+
+## Revoke Token
+
+Even a generated token has TTL, we should be able to revoke it via plugin.

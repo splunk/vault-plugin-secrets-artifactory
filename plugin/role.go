@@ -79,9 +79,9 @@ func (role RoleStorageEntry) save(ctx context.Context, storage logical.Storage) 
 	return storage.Put(ctx, entry)
 }
 
-// func (role RoleStorageEntry) permissionTargetsHash() string {
-// 	return getStringHash(role.RawPermissionTargets)
-// }
+func (role RoleStorageEntry) permissionTargetsHash() string {
+	return getStringHash(role.RawPermissionTargets)
+}
 
 // get or create the basic lock for the role name
 func (backend *ArtifactoryBackend) roleLock(roleName string) *locksutil.LockEntry {
@@ -116,12 +116,6 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 		}
 	}
 
-	// update permission target in role before save
-	role.PermissionTargets = pts
-	if err = role.save(ctx, req.Storage); err != nil {
-		return nil, err
-	}
-
 	// Create/Update permission targets
 	for idx, pt := range pts {
 		ptName := permissionTargetName(role.Name, idx)
@@ -129,6 +123,12 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 		if err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
 			return nil, fmt.Errorf("Failed to create/update a permission target - %s", err.Error())
 		}
+	}
+
+	// update permission target in role before save
+	role.PermissionTargets = pts
+	if err = role.save(ctx, req.Storage); err != nil {
+		return nil, err
 	}
 
 	return nil, nil
