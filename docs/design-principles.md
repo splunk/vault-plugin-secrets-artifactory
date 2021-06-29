@@ -50,6 +50,6 @@ Communicate with your teams to not modify these resources.
 Until rollback is implemented, we ensure that least privileges at the time of role creation, we perform role creation and permission target creation/deletion in following order
 
 - compute what permission targets to be added/updated and what's to be removed
-- perform permission targets' removal
+- perform removal of excess permission targets if there's any
+- perform creation/update of permission targets
 - perform role creation/update
-- perform permission targets' creation/update

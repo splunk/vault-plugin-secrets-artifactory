@@ -198,13 +198,13 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 	}
 	// If no new permission targets or new permission targets are exactly same as old permission targets,
 	// just return without updating permission targets
-	// if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
-	// 	backend.Logger().Debug("No net new permission targets are added for role", "role_name", role.Name)
-	// 	if err := role.save(ctx, req.Storage); err != nil {
-	// 		return logical.ErrorResponse(err.Error()), nil
-	// 	}
-	// 	return &logical.Response{Data: roleDetails(role)}, nil
-	// }
+	if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
+		backend.Logger().Debug("No net new permission targets are added for role", "role_name", role.Name)
+		if err := role.save(ctx, req.Storage); err != nil {
+			return logical.ErrorResponse(err.Error()), nil
+		}
+		return &logical.Response{Data: roleDetails(role)}, nil
+	}
 
 	// new permission targets, update role
 	var pts []PermissionTarget
