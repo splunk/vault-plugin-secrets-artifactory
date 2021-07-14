@@ -167,7 +167,7 @@ Requirements:
 make build
 
 # Start a standalone vault dev server
-make dev-server
+make vault-only
 
 # New terminal
 export VAULT_ADDR=http://localhost:8200
