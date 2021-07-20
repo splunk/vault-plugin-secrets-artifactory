@@ -206,6 +206,5 @@ open coverage.html
 [artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#
 [permission-target-format]:https://www.jfrog.com/confluence/display/JFROG/Security+Configuration+JSON#SecurityConfigurationJSON-application/vnd.org.jfrog.artifactory.security.PermissionTargetV2+json
-[vault-artifactory-token-plugin]: 
 [vault-getting-started]:https://www.vaultproject.io/intro/getting-started/install.html
 [vault plugin]:https://www.vaultproject.io/docs/internals/plugins.html
