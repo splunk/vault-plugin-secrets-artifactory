@@ -1,8 +1,6 @@
 <!-- omit in toc -->
 # vault-plugin-secrets-artifactory
 
->Successor of [vault-artifactory-token-plugin]. Planned to be open-sourced.
-
 This is a backend plugin to be used with Vault. This plugin generates one-time access tokens.
 
 [Design doc][design-doc]
@@ -200,12 +198,6 @@ make test-vaultacc
 make report
 open coverage.html
 ```
-
-## Roadmap
-
-This plugin is being initially developed for an internal application at Splunk for suite of
-ephemeral credentials. No user or service account should be able to publish production artifacts
-with a static credential.
 
 ## License
 
