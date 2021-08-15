@@ -1,4 +1,4 @@
-name: "CodeQL"
+name: CodeQL
 
 on:
   push:
@@ -25,8 +25,7 @@ jobs:
       uses: github/codeql-action/init@v1
       with:
         languages: ${{ matrix.language }}
-    - name: build
-      run: |
-        make build-linux
+    - name: Build
+      run: make build-linux
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
