@@ -1,6 +1,11 @@
 <!-- omit in toc -->
 # vault-plugin-secrets-artifactory
 
+[![build-status-badge]][actions-page]
+[![go-report-card-badge]][go-report-card]
+[![codecov-badge]][codecov]
+![go-version-badge]
+
 This is a backend plugin to be used with Vault. This plugin generates one-time access tokens.
 
 [Design doc][design-doc]
@@ -15,8 +20,7 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
   - [Full dev environment](#full-dev-environment)
   - [Developing with an existing Artifactory instance](#developing-with-an-existing-artifactory-instance)
   - [Tests](#tests)
-- [Roadmap](#roadmap)
-- [LICENSE](#license)
+- [License](#license)
 
 ## Requirements
 
@@ -203,8 +207,15 @@ open coverage.html
 
 [Apache Software License version 2.0](LICENSE)
 
+[actions-page]:https://github.com/splunk/vault-plugin-secrets-artifactory/actions
 [artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
+[build-status-badge]:https://github.com/splunk/vault-plugin-secrets-artifactory/workflows/test.yml/badge.svg
+[codecov]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory
+[codecov-badge]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory/branch/main/graph/badge.svg
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#
+[go-report-card]:https://goreportcard.com/report/github.com/splunk/vault-plugin-secrets-artifactory
+[go-report-card-badge]:https://goreportcard.com/badge/github.com/splunk/vault-plugin-secrets-artifactory
+[go-version-badge]:https://img.shields.io/github/go-mod/go-version/splunk/vault-plugin-secrets-artifactory
 [permission-target-format]:https://www.jfrog.com/confluence/display/JFROG/Security+Configuration+JSON#SecurityConfigurationJSON-application/vnd.org.jfrog.artifactory.security.PermissionTargetV2+json
 [vault-getting-started]:https://www.vaultproject.io/intro/getting-started/install.html
 [vault plugin]:https://www.vaultproject.io/docs/internals/plugins.html
