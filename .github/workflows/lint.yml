@@ -2,12 +2,9 @@ name: Lint
 
 on:
   push:
-    tags:
-      - v*
-    branches:
-      - master
-      - main
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   golangci:
