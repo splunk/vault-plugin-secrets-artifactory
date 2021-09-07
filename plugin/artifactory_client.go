@@ -120,7 +120,19 @@ func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error 
 }
 
 func (ac *artifactoryClient) DeleteGroup(role *RoleStorageEntry) error {
-	return ac.client.DeleteGroup(groupName(role))
+	params := services.GroupParams{
+		GroupDetails: services.Group{
+			Name: groupName(role),
+		},
+	}
+	group, err := ac.client.GetGroup(params)
+	if err != nil {
+		return err
+	}
+	if group != nil {
+		return ac.client.DeleteGroup(group.Name)
+	}
+	return nil
 }
 
 func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error {
