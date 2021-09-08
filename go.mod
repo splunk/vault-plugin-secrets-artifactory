@@ -18,7 +18,7 @@ require (
 	github.com/jfrog/jfrog-client-go v0.26.1
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
-	github.com/mitchellh/mapstructure v1.3.2
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.6 // indirect
