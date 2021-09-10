@@ -17,6 +17,7 @@ package artifactorysecrets
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/jfrog/jfrog-client-go/artifactory"
@@ -55,8 +56,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 		expiration: time.Now().Add(clientTTL),
 	}
 
-	// TODO: need to figure out
-	log.SetLogger(log.NewLogger(log.INFO, nil))
+	log.SetLogger(log.NewLogger(log.INFO, io.Discard))
 
 	artifactoryDetails := auth.NewArtifactoryDetails()
 	artifactoryDetails.SetUrl(config.BaseURL)
