@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -70,12 +71,17 @@ func (backend *ArtifactoryBackend) pathRoleDelete(ctx context.Context, req *logi
 
 	deleteGroup := true
 
+	// add wals
+	walIds, err := backend.addWalsForRoleResources(ctx, req, roleName, role.PermissionTargets, 0, deleteGroup)
+	if err != nil {
+		return nil, errwrap.Wrapf(fmt.Sprintf("unable to create WALs for role artifactory resources %s: {{err}}", roleName), err)
+	}
 	if err := backend.deleteRoleEntry(ctx, req.Storage, roleName); err != nil {
 		return logical.ErrorResponse(fmt.Sprintf("Unable to remove role %s", roleName)), err
 	}
 
 	// Try to clean up resources.
-	if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, role.PermissionTargets, 0, deleteGroup); cleanupErr != nil {
+	if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, role.PermissionTargets, 0, deleteGroup, walIds); cleanupErr != nil {
 		backend.Logger().Warn(
 			"unable to clean up unused artifactory resources from deleted role.",
 			"role_name", roleName, "errors", cleanupErr)
@@ -223,7 +229,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 	role.RawPermissionTargets = ptsRaw.(string)
 
 	// save role with new permission targets
-	warnings, err := backend.saveRoleWithNewPermissionTargets(ctx, req, role, pts)
+	warnings, err := backend.saveRoleWithNewPermissionTargets(ctx, req, role, pts, isCreate)
 	if err != nil {
 		return logical.ErrorResponse(err.Error()), nil
 	} else if len(warnings) > 0 {
