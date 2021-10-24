@@ -53,3 +53,11 @@ Until rollback is implemented, we ensure that least privileges at the time of ro
 - perform removal of excess permission targets if there's any
 - perform creation/update of permission targets
 - perform role creation/update
+
+### Role Creation May Partially Fail
+
+Every group creation and permission target creation is an Artifactory API call per resource. If an API call to one of these resources fails, the role creation fails and Vault will attempt to rollback.
+
+These rollbackls are API calls, so they may also fail. The secrets engine uses WAL to ensure that unused permission targets are cleaned up. In the case of api failures, you may need to clean these up manually.
+
+Rollbacks are using Vault's Write Ahead Logs(WAL) underlying mechanism.  

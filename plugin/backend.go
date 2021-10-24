@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
@@ -103,7 +104,9 @@ func Backend(conf *logical.BackendConfig) *ArtifactoryBackend {
 			pathRoleList(backend),
 			pathToken(backend),
 		),
-		Invalidate: backend.invalidate,
+		Invalidate:        backend.invalidate,
+		WALRollback:       backend.walRollback,
+		WALRollbackMinAge: 30 * time.Second,
 	}
 
 	return backend

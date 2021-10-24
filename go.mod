@@ -6,6 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.2.2 // indirect

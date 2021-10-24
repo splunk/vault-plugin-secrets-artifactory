@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/locksutil"
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -90,10 +92,30 @@ func (backend *ArtifactoryBackend) roleLock(roleName string) *locksutil.LockEntr
 
 // saveRoleWithNewPermissionTargets will create group and permission targets
 // persist in the data store
-func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget) (warning []string, err error) {
+func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget, deleteGroup bool) (warning []string, err error) {
 	backend.Logger().Debug("Creating/Updating role with new permission targets")
 
 	oldPts := role.PermissionTargets
+
+	// Add WALs for both old and new permission targets
+	// WAL callback checks whether resources are still being used by role
+	// so there is no harm in adding WALs early, or adding WALs for resources that
+	// will eventually get cleaned up
+	deleteExcessivePTs := len(oldPts) > len(pts)
+	oldWalIds := []string{}
+	if deleteExcessivePTs {
+		backend.Logger().Debug("adding WALs for old permission targets")
+		oldWalIds, err = backend.addWalsForRoleResources(ctx, req, role.Name, oldPts[len(pts):], len(pts), false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	backend.Logger().Debug("adding WALs for new permission targets")
+	newWalIds, err := backend.addWalsForRoleResources(ctx, req, role.Name, pts, 0, deleteGroup)
+	if err != nil {
+		return nil, err
+	}
 
 	ac, err := backend.getClient(ctx, req.Storage)
 	if err != nil {
@@ -106,11 +128,11 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 		return nil, fmt.Errorf("failed to create an artifactory group - %s", err.Error())
 	}
 
-	if len(oldPts) > len(pts) {
+	if deleteExcessivePTs {
 		backend.Logger().Debug("removing role excessive permission targets", "role_name", role.Name)
-		if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, oldPts[len(pts):], len(pts), false); cleanupErr != nil {
+		if cleanupErr := backend.tryDeleteRoleResources(ctx, req, role, oldPts[len(pts):], len(pts), false, oldWalIds); cleanupErr != nil {
 			backend.Logger().Warn(
-				"unable to clean up unused old permission targets for role.",
+				"unable to clean up unused old permission targets for role. WALs exist to cleanup but ignoring error",
 				"role_name", role.Name, "errors", cleanupErr)
 			return []string{cleanupErr.Error()}, nil
 		}
@@ -130,6 +152,11 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 	if err = role.save(ctx, req.Storage); err != nil {
 		return nil, err
 	}
+
+	// Successfully saved the new role with new permission targets. try cleaning up WALs
+	// that would rollback the role permission targets (will no-op if still in use by role)
+	backend.Logger().Debug("removing WALs for new permission targets")
+	backend.tryDeleteWALs(ctx, req.Storage, newWalIds...)
 
 	return nil, nil
 }
@@ -165,8 +192,43 @@ func (backend *ArtifactoryBackend) listRoleEntries(ctx context.Context, storage 
 	}
 	return roles, nil
 }
+func (backend *ArtifactoryBackend) addWalsForRoleResources(ctx context.Context, req *logical.Request, roleName string, pts []PermissionTarget, offset int, deleteGroup bool) ([]string, error) {
+	if len(pts) == 0 {
+		backend.Logger().Debug("skip WALs for nil role permission targets")
+		return nil, nil
+	}
+	walIds := make([]string, 0, len(pts)+2)
+	var err error
+	var walId string
+	if deleteGroup {
+		backend.Logger().Debug("adding WAL for group", "role_name", roleName)
+		walId, err = framework.PutWAL(ctx, req.Storage, walTypeGroup, &walGroup{
+			RoleName: roleName,
+		})
+		if err != nil {
+			return walIds, errwrap.Wrapf("Failed to create WAL entry to clean up group: {{err}}", err)
+		}
+		walIds = append(walIds, walId)
+	}
 
-func (backend *ArtifactoryBackend) tryDeleteRoleResources(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget, offset int, deleteGroup bool) error {
+	for idx := range pts {
+		ptName := permissionTargetName(roleName, idx+offset)
+		backend.Logger().Debug("adding WAL for permission target", "name", ptName)
+		walId, err = framework.PutWAL(ctx, req.Storage, walTypePermissionTarget, &walPermissionTarget{
+			RoleName:             roleName,
+			PermissionTargetName: ptName,
+			Index:                idx + offset,
+		})
+		if err != nil {
+			return walIds, errwrap.Wrapf("Failed to create WAL entry to clean up a permission target: {{err}}", err)
+		}
+		walIds = append(walIds, walId)
+	}
+
+	return walIds, err
+}
+
+func (backend *ArtifactoryBackend) tryDeleteRoleResources(ctx context.Context, req *logical.Request, role *RoleStorageEntry, pts []PermissionTarget, offset int, deleteGroup bool, walIds []string) error {
 	if len(pts) == 0 {
 		backend.Logger().Debug("skip deletion for empty permission targets")
 	}
@@ -194,4 +256,14 @@ func (backend *ArtifactoryBackend) tryDeleteRoleResources(ctx context.Context, r
 	}
 
 	return merr.ErrorOrNil()
+}
+
+func (backend *ArtifactoryBackend) tryDeleteWALs(ctx context.Context, storage logical.Storage, walIds ...string) {
+	for _, walId := range walIds {
+		// ignore errors, WALs that are not needed will just no-op
+		err := framework.DeleteWAL(ctx, storage, walId)
+		if err != nil {
+			backend.Logger().Error("Unable to delete unneeded WAL %s, ignoring error since WAL will no-op: %v", walId, err)
+		}
+	}
 }
