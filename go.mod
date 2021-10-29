@@ -6,14 +6,11 @@ require (
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hashicorp/go-plugin v1.2.2 // indirect
-	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.2
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/hashicorp/vault/api v1.0.5-0.20200519221902-385fac77e20f
-	github.com/hashicorp/vault/sdk v0.2.1
+	github.com/hashicorp/vault-testing-stepwise v0.1.2
+	github.com/hashicorp/vault/api v1.2.0
+	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d // indirect
 	github.com/jfrog/jfrog-client-go v0.27.0
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
