@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	uuid "github.com/hashicorp/go-uuid"
+	stepwise "github.com/hashicorp/vault-testing-stepwise"
 	"github.com/hashicorp/vault/api"
-	"github.com/hashicorp/vault/sdk/testing/stepwise"
 	"github.com/stretchr/testify/require"
 )
 

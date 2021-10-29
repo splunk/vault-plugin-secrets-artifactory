@@ -60,7 +60,7 @@ tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .
 	export GOBIN=$(shell pwd)/.tools; go install github.com/wadey/gocovmerge@master
 
 .tools/golangci-lint:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.39.0
+	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.1
 
 .tools/jq: JQ_VERSION = 1.6
 .tools/jq: JQ_PLATFORM = $(patsubst darwin,osx-amd,$(shell uname -s | tr A-Z a-z))
