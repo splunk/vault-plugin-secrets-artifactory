@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/vault/api v1.3.0
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d // indirect
-	github.com/jfrog/jfrog-client-go v0.27.0
+	github.com/jfrog/jfrog-client-go v1.6.6
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3
