@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -154,8 +153,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		role = &RoleStorageEntry{
 			Name: roleName,
 		}
-		roleID, _ := uuid.NewUUID()
-		role.RoleID = roleID.String()
+		role.RoleID = roleID(roleName)
 	}
 
 	isCreate := req.Operation == logical.CreateOperation
