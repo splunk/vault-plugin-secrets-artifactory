@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const maxArtifactoryNameLen = 64
+
 func TestValidatePermissionTarget(t *testing.T) {
 
 	t.Parallel()
@@ -122,6 +124,31 @@ func TestConvertPermissionTarget(t *testing.T) {
 		assert.Len(t, cpt.Repo.Actions.Groups["vault-plugin.1234567890"], 2, "incorrect number of operations")
 		assert.ElementsMatch(t, []string{"read", "write"}, cpt.Repo.Actions.Groups["vault-plugin.1234567890"])
 	})
+}
+
+func TestRoleID(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		maxLen int
+	}{
+		{
+			name:   "roleID is less than 64 chars (artifactory max)",
+			input:  "rolename-long-but-less-than-max",
+			maxLen: maxArtifactoryNameLen,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := roleID(test.input)
+			checkTokenUsernameLength(t, actual)
+			if len(actual) > test.maxLen {
+				t.Errorf("roleID: %v, len(roleID): %v", actual, len(actual))
+			}
+		})
+
+	}
 }
 
 func TestTokenUserName(t *testing.T) {
