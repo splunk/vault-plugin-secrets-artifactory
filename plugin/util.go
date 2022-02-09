@@ -29,6 +29,7 @@ const (
 	tokenUsernamePrefix  = "auto-vault-plugin"
 	tokenUsernameMaxLen  = 58
 	tokenUsernameHashLen = 8
+	roleIDHashLen        = 32
 )
 
 func groupName(roleEntry *RoleStorageEntry) string {
@@ -37,6 +38,11 @@ func groupName(roleEntry *RoleStorageEntry) string {
 
 func permissionTargetName(roleName string, index int) string {
 	return fmt.Sprintf("%s.pt%d.%s", pluginPrefix, index, roleName)
+}
+
+func roleID(roleName string) string {
+	roleID := sha256.Sum256([]byte(roleName))
+	return fmt.Sprintf("%x", roleID)[:roleIDHashLen]
 }
 
 func tokenUsername(roleName string) string {

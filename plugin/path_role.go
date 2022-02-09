@@ -16,7 +16,6 @@ package artifactorysecrets
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -154,8 +153,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		role = &RoleStorageEntry{
 			Name: roleName,
 		}
-		roleID := sha256.Sum256([]byte(roleName))
-		role.RoleID = fmt.Sprintf("%x", roleID[:32])
+		role.RoleID = roleID(roleName)
 	}
 
 	isCreate := req.Operation == logical.CreateOperation
