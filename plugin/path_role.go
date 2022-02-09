@@ -16,11 +16,11 @@ package artifactorysecrets
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -154,8 +154,8 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		role = &RoleStorageEntry{
 			Name: roleName,
 		}
-		roleID, _ := uuid.NewUUID()
-		role.RoleID = roleID.String()
+		roleID := sha256.Sum256([]byte(roleName))
+		role.RoleID = fmt.Sprintf("%x", roleID[:32])
 	}
 
 	isCreate := req.Operation == logical.CreateOperation
