@@ -24,7 +24,7 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 
 ## Requirements
 
-- Go: 1.16 or above
+- Go: 1.17 or above
 - **Artifactory: 6.6.0** or above for API V2 support.
 - **Artifactory Pro or above is required** for the [API endpoints][artifactory-api-ref] used by
   this plugin. A license key will be needed to spin up the full dev environment.
