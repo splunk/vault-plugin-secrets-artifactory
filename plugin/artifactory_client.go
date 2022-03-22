@@ -114,8 +114,8 @@ func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error 
 		return ac.client.UpdateGroup(params)
 	}
 	params.GroupDetails.Description = fmt.Sprintf("vault plugin group for %s", role.Name)
-	params.GroupDetails.AutoJoin = false
-	params.GroupDetails.AdminPrivileges = false
+	*params.GroupDetails.AutoJoin = false
+	*params.GroupDetails.AdminPrivileges = false
 	return ac.client.CreateGroup(params)
 }
 
