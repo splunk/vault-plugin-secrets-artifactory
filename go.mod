@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/vault-testing-stepwise v0.1.2
 	github.com/hashicorp/vault/api v1.6.0
 	github.com/hashicorp/vault/sdk v0.5.0
-	github.com/jfrog/jfrog-client-go v1.12.0
+	github.com/jfrog/jfrog-client-go v1.13.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.7.1
 )
@@ -52,7 +52,7 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/jfrog/build-info-go v1.2.3 // indirect
+	github.com/jfrog/build-info-go v1.2.6 // indirect
 	github.com/jfrog/gofrog v1.1.1 // indirect
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/klauspost/compress v1.11.4 // indirect
@@ -91,5 +91,5 @@ require (
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
