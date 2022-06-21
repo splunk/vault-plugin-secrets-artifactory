@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.5.2
 	github.com/jfrog/jfrog-client-go v1.12.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.4
 )
 
 require (
@@ -74,7 +74,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
