@@ -21,8 +21,9 @@ import (
 	"time"
 
 	"github.com/jfrog/jfrog-client-go/artifactory"
-	"github.com/jfrog/jfrog-client-go/artifactory/auth"
+	artauth "github.com/jfrog/jfrog-client-go/artifactory/auth"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
+	"github.com/jfrog/jfrog-client-go/auth"
 	artconfig "github.com/jfrog/jfrog-client-go/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
@@ -36,7 +37,7 @@ type Client interface {
 	DeleteGroup(role *RoleStorageEntry) error
 	CreateOrUpdatePermissionTarget(role *RoleStorageEntry, pt *PermissionTarget, ptName string) error
 	DeletePermissionTarget(ptName string) error
-	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error)
+	CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error)
 	Valid() bool
 }
 
@@ -58,7 +59,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 
 	log.SetLogger(log.NewLogger(log.INFO, io.Discard))
 
-	artifactoryDetails := auth.NewArtifactoryDetails()
+	artifactoryDetails := artauth.NewArtifactoryDetails()
 	artifactoryDetails.SetUrl(config.BaseURL)
 
 	if config.BearerToken != "" {
@@ -153,7 +154,7 @@ func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
 	return nil
 }
 
-func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error) {
+func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error) {
 	params := services.CreateTokenParams{
 		Scope:     fmt.Sprintf("api:* member-of-groups:%s", groupName(role)),
 		Username:  tokenUsername(role.Name),
