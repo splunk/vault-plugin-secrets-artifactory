@@ -23,7 +23,7 @@ import (
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/jfrog/jfrog-client-go/artifactory"
-	"github.com/jfrog/jfrog-client-go/artifactory/services"
+	"github.com/jfrog/jfrog-client-go/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -167,8 +167,8 @@ func (ac *mockArtifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorag
 func (ac *mockArtifactoryClient) DeletePermissionTarget(ptName string) error {
 	return nil
 }
-func (ac *mockArtifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (services.CreateTokenResponseData, error) {
-	return services.CreateTokenResponseData{}, nil
+func (ac *mockArtifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error) {
+	return auth.CreateTokenResponseData{}, nil
 }
 
 // getAccClient returns the underlying artifactory services manager for full access to the Artifactory API.

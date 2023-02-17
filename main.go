@@ -6,8 +6,8 @@ import (
 
 	"github.com/hashicorp/vault/api"
 
-	artifactorysecrets "github.com/splunk/vault-plugin-secrets-artifactory/plugin"
 	"github.com/hashicorp/vault/sdk/plugin"
+	artifactorysecrets "github.com/splunk/vault-plugin-secrets-artifactory/plugin"
 )
 
 var (

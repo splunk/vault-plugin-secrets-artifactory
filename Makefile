@@ -54,13 +54,13 @@ tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .
 	@chmod +x .tools/docker-compose
 
 .tools/gocover-cobertura:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.1.0
+	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.2.0
 
 .tools/gocovmerge:
 	export GOBIN=$(shell pwd)/.tools; go install github.com/wadey/gocovmerge@master
 
 .tools/golangci-lint:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
+	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
 
 .tools/jq: JQ_VERSION = 1.6
 .tools/jq: JQ_PLATFORM = $(patsubst darwin,osx-amd,$(shell uname -s | tr A-Z a-z))
