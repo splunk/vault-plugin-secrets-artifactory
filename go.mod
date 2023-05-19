@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.8.1
 	github.com/jfrog/jfrog-client-go v1.26.2
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.3
 )
 
 require (
