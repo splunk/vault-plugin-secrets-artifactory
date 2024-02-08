@@ -25,7 +25,7 @@ func main() {
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)
 
 	log.Printf("vault-artifactory-secrets-plugin %s, commit %s, built at %s\n", version, commit, date)
-	if err := plugin.Serve(&plugin.ServeOpts{
+	if err := plugin.ServeMultiplex(&plugin.ServeOpts{
 		BackendFactoryFunc: artifactorysecrets.Factory,
 		TLSProviderFunc:    tlsProviderFunc,
 	}); err != nil {

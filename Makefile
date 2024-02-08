@@ -60,7 +60,7 @@ tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .
 	export GOBIN=$(shell pwd)/.tools; go install github.com/wadey/gocovmerge@master
 
 .tools/golangci-lint:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
+	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.0
 
 .tools/jq: JQ_VERSION = 1.6
 .tools/jq: JQ_PLATFORM = $(patsubst darwin,osx-amd,$(shell uname -s | tr A-Z a-z))
@@ -68,7 +68,7 @@ tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .
 	curl -so .tools/jq -sSL https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-$(JQ_PLATFORM)64
 	@chmod +x .tools/jq
 
-.tools/vault: VAULT_VERSION = 1.7.1
+.tools/vault: VAULT_VERSION = 1.14.8
 .tools/vault: VAULT_PLATFORM = $(shell uname -s | tr A-Z a-z)
 .tools/vault:
 	curl -so .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip

@@ -69,11 +69,21 @@ func (backend *ArtifactoryBackend) pathTokenCreateUpdate(ctx context.Context, re
 	return &logical.Response{Data: token}, nil
 }
 
+// There is a correctness check that verifies there is an ExistenceFunc for all
+// the paths that have a CreateOperation, so we must define a stub one to pass
+// that if needed.
+func (backend *ArtifactoryBackend) pathTokenExistenceCheck() framework.ExistenceFunc {
+	return func(context.Context, *logical.Request, *framework.FieldData) (bool, error) {
+		return false, nil
+	}
+}
+
 func pathToken(backend *ArtifactoryBackend) []*framework.Path {
 	paths := []*framework.Path{
 		{
-			Pattern: fmt.Sprintf("%s/%s", tokenPrefix, framework.GenericNameRegex("role_name")),
-			Fields:  createTokenSchema,
+			Pattern:        fmt.Sprintf("%s/%s", tokenPrefix, framework.GenericNameRegex("role_name")),
+			Fields:         createTokenSchema,
+			ExistenceCheck: backend.pathTokenExistenceCheck(),
 			Callbacks: map[logical.Operation]framework.OperationFunc{
 				logical.CreateOperation: backend.pathTokenCreateUpdate,
 				logical.UpdateOperation: backend.pathTokenCreateUpdate,
