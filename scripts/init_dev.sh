@@ -9,14 +9,14 @@ DIR=$(dirname "$0")
 . $DIR/wait_for.sh
 
 pushd $DIR &>/dev/null
-# docker-compose version >&2
+# docker compose version >&2
 
 set +u
 if [ -n "$CI" ]; then
   echo "Starting containers in net=host mode..." >&2
-  docker-compose -f docker-compose-ci.yaml up -d >&2
+  docker compose -f docker-compose-ci.yaml up -d >&2
 else
-  docker-compose up -d >&2
+  docker compose up -d >&2
 fi
 set -u
 

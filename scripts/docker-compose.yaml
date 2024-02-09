@@ -1,7 +1,7 @@
 version: '3'
 services:
   artifactory:
-    image: releases-docker.jfrog.io/jfrog/artifactory-pro:latest
+    image: releases-docker.jfrog.io/jfrog/artifactory-pro:7.71.16
     container_name: artifactory
     ports:
       - 8081:8081 # artifactory REST APIs
@@ -17,7 +17,7 @@ services:
         soft: 32000
         hard: 40000
   vault:
-    image: vault:1.7.1
+    image: hashicorp/vault:1.14.8
     container_name: vault
     command: ["server", "-log-level=debug", "-dev", "-dev-plugin-dir=/vault/plugins"]
     restart: always

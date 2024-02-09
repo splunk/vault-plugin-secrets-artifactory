@@ -37,21 +37,15 @@ dev: tools build-linux
 	@./scripts/init_dev.sh
 
 clean-dev:
-	@cd scripts && docker-compose down
+	@cd scripts && docker compose down
 
 clean-all: clean-dev
 	@rm -rf .tools coverage*.* plugins
 
-tools: .tools .tools/docker-compose .tools/gocover-cobertura .tools/gocovmerge .tools/golangci-lint .tools/jq .tools/vault
+tools: .tools .tools/gocover-cobertura .tools/gocovmerge .tools/golangci-lint .tools/jq .tools/vault
 
 .tools:
 	@mkdir -p .tools
-
-.tools/docker-compose: DOCKER_COMPOSE_VERSION = 1.29.1
-.tools/docker-compose: DOCKER_COMPOSE_BINARY = "docker-compose-$(shell uname -s)-$(shell uname -m)"
-.tools/docker-compose:
-	curl -so .tools/docker-compose -L "https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/$(DOCKER_COMPOSE_BINARY)"
-	@chmod +x .tools/docker-compose
 
 .tools/gocover-cobertura:
 	export GOBIN=$(shell pwd)/.tools; go install github.com/boumenot/gocover-cobertura@v1.2.0
