@@ -56,13 +56,22 @@ func tokenUsername(roleName string) string {
 	return tokenUser
 }
 
-// appendTrailingSlash appends trailing slash if url doesn't end with slash.
-// artifactory client assumes URL ends with '/'
-func appendTrailingSlash(url string) string {
-	if !strings.HasSuffix(url, "/") {
-		return fmt.Sprintf("%s/", url)
-	}
-	return url
+func trimEndpoints(url string) string {
+	s := strings.TrimRight(url, "/")
+	s = strings.TrimSuffix(s, "/access")
+	s = strings.TrimSuffix(s, "/artifactory")
+
+	return s
+}
+
+func ensureAccessURL(url string) string {
+	s := trimEndpoints(url)
+	return fmt.Sprintf("%s/access/", s)
+}
+
+func ensureArtifactoryURL(url string) string {
+	s := trimEndpoints(url)
+	return fmt.Sprintf("%s/artifactory/", s)
 }
 
 func convertPermissionTarget(fromPt *PermissionTarget, toPt *services.PermissionTargetParams, groupName, ptName string) {

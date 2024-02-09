@@ -57,14 +57,12 @@ func TestArtAccNewClient(t *testing.T) {
 	bearerToken := os.Getenv("ARTIFACTORY_BEARER_TOKEN")
 	username := os.Getenv("ARTIFACTORY_USER")
 	password := os.Getenv("ARTIFACTORY_PASSWORD")
-	apiKey := os.Getenv("ARTIFACTORY_API_KEY")
 
 	require := require.New(t)
 	require.NotEmpty(baseUrl)
 	require.NotEmpty(bearerToken)
 	require.NotEmpty(username)
 	require.NotEmpty(password)
-	require.NotEmpty(apiKey)
 	require.True(strings.HasSuffix(baseUrl, "/"))
 
 	tests := []struct {
@@ -84,13 +82,6 @@ func TestArtAccNewClient(t *testing.T) {
 				BaseURL:  baseUrl,
 				Username: username,
 				Password: password,
-			},
-		},
-		{
-			name: "api_key",
-			config: &ConfigStorageEntry{
-				BaseURL: baseUrl,
-				ApiKey:  apiKey,
 			},
 		},
 	}

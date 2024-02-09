@@ -33,13 +33,6 @@ setup_artifactory() {
     echo
   done
 
-  # create an apiKey for admin user if it doesn't already exist
-  ARTIFACTORY_API_KEY=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" "${ARTIFACTORY_URL}api/security/apiKey" | jq -r .apiKey)
-  if [ -z "$ARTIFACTORY_API_KEY" ] || [ "$ARTIFACTORY_API_KEY" == "null" ]; then
-    echo "Creating new api key..."
-    ARTIFACTORY_API_KEY=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ARTIFACTORY_URL}api/security/apiKey" | jq -r .apiKey)
-  fi
-
   # # create a new admin user for UI use
   # password=$(openssl rand -base64 8)
   # payload=$(jq -n --arg pw "$password" '{userName: "dev", email: "dev@dev.net", password: $pw, admin: true}')
@@ -59,4 +52,3 @@ echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
 echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
 echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
-echo export ARTIFACTORY_API_KEY=\"$ARTIFACTORY_API_KEY\"\;

@@ -34,7 +34,7 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example",
+			"base_url":       "https://example.jfrog.io/",
 			"bearer_token":   "mybearertoken",
 			"client_timeout": "15s",
 			"max_ttl":        "600s",
@@ -43,7 +43,7 @@ func TestConfig(t *testing.T) {
 		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example/",
+			"base_url":       "https://example.jfrog.io/",
 			"client_timeout": int64(15),
 			"max_ttl":        int64(600),
 		}
@@ -64,31 +64,6 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, expected)
 	})
 
-	t.Run("api_key", func(t *testing.T) {
-		t.Parallel()
-
-		backend, reqStorage := getTestBackend(t, true)
-
-		testConfigRead(t, backend, reqStorage, nil)
-
-		conf := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example/",
-			"api_eky":        "myapikey",
-			"client_timeout": "60s",
-			"max_ttl":        "300s",
-		}
-
-		testConfigUpdate(t, backend, reqStorage, conf)
-
-		expected := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example/",
-			"client_timeout": int64(60),
-			"max_ttl":        int64(300),
-		}
-
-		testConfigRead(t, backend, reqStorage, expected)
-	})
-
 	t.Run("user_pwd", func(t *testing.T) {
 		t.Parallel()
 
@@ -97,7 +72,7 @@ func TestConfig(t *testing.T) {
 		testConfigRead(t, backend, reqStorage, nil)
 
 		conf := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example",
+			"base_url":       "https://example.jfrog.io/",
 			"username":       "uname",
 			"password":       "pwd",
 			"client_timeout": "2m",
@@ -107,7 +82,7 @@ func TestConfig(t *testing.T) {
 		testConfigUpdate(t, backend, reqStorage, conf)
 
 		expected := map[string]interface{}{
-			"base_url":       "https://example.jfrog.io/example/",
+			"base_url":       "https://example.jfrog.io/",
 			"client_timeout": int64(120),
 			"max_ttl":        int64(3600),
 		}
