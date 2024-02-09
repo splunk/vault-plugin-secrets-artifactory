@@ -218,7 +218,7 @@ open coverage.html
 
 [actions-page]:https://github.com/splunk/vault-plugin-secrets-artifactory/actions
 [artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
-[build-status-badge]:https://github.com/splunk/vault-plugin-secrets-artifactory/workflows/test.yml/badge.svg
+[build-status-badge]:https://github.com/splunk/vault-plugin-secrets-artifactory/actions/workflows/test.yml/badge.svg
 [codecov]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory
 [codecov-badge]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory/branch/main/graph/badge.svg
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#

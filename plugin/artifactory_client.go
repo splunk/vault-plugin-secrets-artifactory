@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 		accessDetails.SetUser(config.Username)
 		accessDetails.SetPassword(config.Password)
 	} else {
-		return nil, fmt.Errorf("bearer token, or username/password isn't configured")
+		return nil, fmt.Errorf("bearer token and/or username/password not configured")
 	}
 
 	// Note: do not reuse Vault request context here as this client is cached between requests.
