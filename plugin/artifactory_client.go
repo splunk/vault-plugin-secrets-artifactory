@@ -129,7 +129,9 @@ func (ac *artifactoryClient) Valid() bool {
 func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
 	params := services.GroupParams{
 		GroupDetails: services.Group{
-			Name: groupName(role),
+			Name:            groupName(role),
+			AutoJoin:        ptr(false),
+			AdminPrivileges: ptr(false),
 		},
 	}
 
@@ -143,8 +145,6 @@ func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error 
 		return ac.client.UpdateGroup(params)
 	}
 	params.GroupDetails.Description = fmt.Sprintf("vault plugin group for %s", role.Name)
-	*params.GroupDetails.AutoJoin = false
-	*params.GroupDetails.AdminPrivileges = false
 	return ac.client.CreateGroup(params)
 }
 
@@ -184,6 +184,7 @@ func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
 
 func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error) {
 	expiresIn := uint(tokenReq.TTL.Seconds())
+
 	params := accessservices.CreateTokenParams{
 		CommonTokenParams: auth.CommonTokenParams{
 			Scope:     fmt.Sprintf("applied-permissions/groups:%s", groupName(role)),

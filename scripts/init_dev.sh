@@ -19,6 +19,8 @@ else
   docker compose up -d >&2
 fi
 set -u
+docker compose cp access.config.patch.yml artifactory:/var/opt/jfrog/artifactory/etc/access/access.config.patch.yml
+docker compose restart artifactory
 
 wait_for vault >&2
 wait_for artifactory >&2
@@ -26,23 +28,23 @@ wait_for artifactory >&2
 popd &>/dev/null
 echo "Configuring artifactory..." >&2
 # eval to capture ARTIFACTORY_ env vars
-eval $("$DIR/setup_dev_artifactory.sh")
+eval "$("$DIR/setup_dev_artifactory.sh")"
 
 # if local env, configure vault plugin to talk to artifactory container hostname
 set +u
-if [ -z "$CI" ] && [ -n "$VAULT_ACC" ]; then
+if [ -z "$CI" ]; then
   export ARTIFACTORY_URL='http://artifactory:8081/artifactory/'
 fi
 
 echo "Configuring vault..." >&2
 # eval to capture VAULT_ env vars
-eval $("$DIR/setup_dev_vault.sh")
+eval "$("$DIR/setup_dev_vault.sh")"
 
 # For end-to-end tests running locally (not CI-pipeline), ARTIFACTORY_URL will refer to container hostname.
 # For acc tests and end-to-end tests in pipeline, ARTIFACTORY_URL will be localhost.
-if [ -n "$CI" ] && [ -z "$VAULT_ACC" ]; then
-  export ARTIFACTORY_URL='http://localhost:8081/artifactory/'
-fi
+# if [ -n "$CI" ] && [ -z "$VAULT_ACC" ]; then
+#   export ARTIFACTORY_URL='http://localhost:8081/artifactory/'
+# fi
 # eval output for local use
 echo -e "\n\033[1;33meval this script to set Artifactory/Vault env vars\033[0m\n" >&2
 echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;

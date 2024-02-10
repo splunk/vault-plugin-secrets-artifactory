@@ -10,7 +10,7 @@ build:
 	go build -v -o plugins/$(NAME)
 
 build-linux:
-	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o plugins/$(NAME)
+	@GOOS=linux GOARCH=$(shell uname -m) CGO_ENABLED=0 go build -o plugins/$(NAME)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
@@ -37,7 +37,7 @@ dev: tools build-linux
 	@./scripts/init_dev.sh
 
 clean-dev:
-	@cd scripts && docker compose down
+	@cd scripts && docker compose down -v
 
 clean-all: clean-dev
 	@rm -rf .tools coverage*.* plugins

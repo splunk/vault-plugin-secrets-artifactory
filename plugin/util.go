@@ -45,6 +45,10 @@ func roleID(roleName string) string {
 	return fmt.Sprintf("%x", roleID)[:roleIDHashLen]
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func tokenUsername(roleName string) string {
 	fullUsername := fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
 	tokenUser := fullUsername
