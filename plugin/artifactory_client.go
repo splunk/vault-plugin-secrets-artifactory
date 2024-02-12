@@ -110,7 +110,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 		Build()
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build access service config - %w", err)
+		return nil, fmt.Errorf("failed to build access service config - %w", err)
 	}
 
 	accessClient, err := access.New(accessServicesConfig)
