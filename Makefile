@@ -1,4 +1,8 @@
 NAME?=vault-artifactory-secrets-plugin
+GOARCH := $(shell uname -m)
+ifeq ($(GOARCH), x86_64)
+	GOARCH := amd64
+endif
 
 .DEFAULT_GOAL := all
 all: get build lint test 
@@ -10,7 +14,7 @@ build:
 	go build -v -o plugins/$(NAME)
 
 build-linux:
-	@GOOS=linux GOARCH=$(shell uname -m) CGO_ENABLED=0 go build -o plugins/$(NAME)
+	@GOOS=linux GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o plugins/$(NAME)
 
 lint: .tools/golangci-lint
 	.tools/golangci-lint run
