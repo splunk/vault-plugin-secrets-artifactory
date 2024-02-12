@@ -115,7 +115,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 
 	accessClient, err := access.New(accessServicesConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build access client - %w", err)
+		return nil, fmt.Errorf("failed to build access client - %w", err)
 	}
 
 	ac.accessClient = accessClient
