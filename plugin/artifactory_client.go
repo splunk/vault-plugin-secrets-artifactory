@@ -98,7 +98,7 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 
 	client, err := artifactory.New(artifactoryServiceConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build artifactory client- %w", err)
+		return nil, fmt.Errorf("failed to build artifactory client - %w", err)
 	}
 
 	ac.client = client
