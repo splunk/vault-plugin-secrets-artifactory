@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ type ConfigStorageEntry struct {
 	BearerToken   string        `json:"bearer_token" structs:"bearer_token" mapstructure:"bearer_token"`
 	Username      string        `json:"username" structs:"username" mapstructure:"username"`
 	Password      string        `json:"password" structs:"password" mapstructure:"password"`
-	ApiKey        string        `json:"api_key" structs:"api_key" mapstructure:"api_key"`
 	MaxTTL        time.Duration `json:"max_ttl" structs:"max_ttl" mapstructure:"max_ttl"`
 	ClientTimeout time.Duration `json:"client_timeout" structs:"client_timeout" mapstructure:"client_timeout"`
 }

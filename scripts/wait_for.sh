@@ -1,7 +1,7 @@
 #!/bin/bash
 
 wait_for() {
-  max_retry=12
+  max_retry=24
   interval=5
   count=0
   while true; do

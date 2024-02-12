@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/jfrog/jfrog-client-go/access"
+	accessauth "github.com/jfrog/jfrog-client-go/access/auth"
+	accessservices "github.com/jfrog/jfrog-client-go/access/services"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	artauth "github.com/jfrog/jfrog-client-go/artifactory/auth"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -42,7 +45,9 @@ type Client interface {
 }
 
 type artifactoryClient struct {
-	client     artifactory.ArtifactoryServicesManager
+	client       artifactory.ArtifactoryServicesManager
+	accessClient *access.AccessServicesManager
+
 	expiration time.Time
 }
 
@@ -60,37 +65,60 @@ func NewClient(config *ConfigStorageEntry) (Client, error) {
 	log.SetLogger(log.NewLogger(log.INFO, io.Discard))
 
 	artifactoryDetails := artauth.NewArtifactoryDetails()
-	artifactoryDetails.SetUrl(config.BaseURL)
+	artifactoryDetails.SetUrl(ensureArtifactoryURL(config.BaseURL))
+
+	// For Access microservice
+	accessDetails := accessauth.NewAccessDetails()
+	accessDetails.SetUrl(ensureAccessURL(config.BaseURL))
 
 	if config.BearerToken != "" {
 		artifactoryDetails.SetAccessToken(config.BearerToken)
-	} else if config.ApiKey != "" {
-		artifactoryDetails.SetApiKey(config.ApiKey)
+		accessDetails.SetAccessToken(config.BearerToken)
 	} else if config.Username != "" && config.Password != "" {
 		artifactoryDetails.SetUser(config.Username)
 		artifactoryDetails.SetPassword(config.Password)
+		accessDetails.SetUser(config.Username)
+		accessDetails.SetPassword(config.Password)
 	} else {
-		return nil, fmt.Errorf("bearer token, apikey or a pair of username/password isn't configured")
+		return nil, fmt.Errorf("bearer token and/or username/password not configured")
 	}
 
 	// Note: do not reuse Vault request context here as this client is cached between requests.
 	artifactoryServiceConfig, err := artconfig.NewConfigBuilder().
 		SetServiceDetails(artifactoryDetails).
-		SetHttpTimeout(config.ClientTimeout).
+		SetOverallRequestTimeout(config.ClientTimeout).
 		// SetDryRun(false).
 		SetContext(context.Background()).
 		SetThreads(1).
 		Build()
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to build artifactory service config - %v", err.Error())
+		return nil, fmt.Errorf("failed to build artifactory service config - %w", err)
 	}
 
 	client, err := artifactory.New(artifactoryServiceConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build artifactory client- %v", err.Error())
+		return nil, fmt.Errorf("failed to build artifactory client - %w", err)
 	}
+
 	ac.client = client
 
+	accessServicesConfig, err := artconfig.NewConfigBuilder().
+		SetServiceDetails(accessDetails).
+		SetContext(context.Background()).
+		SetThreads(1).
+		Build()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build access service config - %w", err)
+	}
+
+	accessClient, err := access.New(accessServicesConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build access client - %w", err)
+	}
+
+	ac.accessClient = accessClient
 	return ac, nil
 }
 
@@ -101,7 +129,9 @@ func (ac *artifactoryClient) Valid() bool {
 func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error {
 	params := services.GroupParams{
 		GroupDetails: services.Group{
-			Name: groupName(role),
+			Name:            groupName(role),
+			AutoJoin:        ptr(false),
+			AdminPrivileges: ptr(false),
 		},
 	}
 
@@ -115,8 +145,6 @@ func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error 
 		return ac.client.UpdateGroup(params)
 	}
 	params.GroupDetails.Description = fmt.Sprintf("vault plugin group for %s", role.Name)
-	*params.GroupDetails.AutoJoin = false
-	*params.GroupDetails.AdminPrivileges = false
 	return ac.client.CreateGroup(params)
 }
 
@@ -155,11 +183,18 @@ func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
 }
 
 func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error) {
-	params := services.CreateTokenParams{
-		Scope:     fmt.Sprintf("api:* member-of-groups:%s", groupName(role)),
-		Username:  tokenUsername(role.Name),
-		ExpiresIn: int(tokenReq.TTL.Seconds()),
+	expiresIn := uint(tokenReq.TTL.Seconds())
+
+	params := accessservices.CreateTokenParams{
+		CommonTokenParams: auth.CommonTokenParams{
+			Scope:     fmt.Sprintf("applied-permissions/groups:%s", groupName(role)),
+			ExpiresIn: &expiresIn,
+			TokenType: "access_token",
+			Audience:  "*@*",
+		},
+		Username:    tokenUsername(role.Name),
+		Description: fmt.Sprintf("Generated from %s", pluginPrefix),
 	}
 
-	return ac.client.CreateToken(params)
+	return ac.accessClient.CreateAccessToken(params)
 }

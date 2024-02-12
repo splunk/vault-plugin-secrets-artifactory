@@ -3,9 +3,11 @@
 set -euo pipefail
 
 ARTIFACTORY_URL="http://localhost:8081/artifactory/"
-ARTIFACTORY_USER="admin";
+ACCESS_URL="http://localhost:8082/access/"
+ARTIFACTORY_USER="admin"
 ARTIFACTORY_PASSWORD="password"
-ARTIFACTORY_BEARER_TOKEN=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ARTIFACTORY_URL}api/security/token" -d "username=$ARTIFACTORY_USER" -d 'expires_in=0' -d 'scope=member-of-groups:*' | jq -r .access_token)
+# 'allow-basic-auth: true' is necessary in access config to use user/pass with the access api.
+ARTIFACTORY_BEARER_TOKEN=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ACCESS_URL}api/v1/tokens" -d "username=$ARTIFACTORY_USER" -d 'expires_in=0' -d "description='Admin token'" -d 'scope=applied-permissions/admin' | jq -r .access_token)
 
 setup_artifactory() {
   auth_header="Authorization: Bearer $ARTIFACTORY_BEARER_TOKEN"
@@ -33,13 +35,6 @@ setup_artifactory() {
     echo
   done
 
-  # create an apiKey for admin user if it doesn't already exist
-  ARTIFACTORY_API_KEY=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" "${ARTIFACTORY_URL}api/security/apiKey" | jq -r .apiKey)
-  if [ -z "$ARTIFACTORY_API_KEY" ] || [ "$ARTIFACTORY_API_KEY" == "null" ]; then
-    echo "Creating new api key..."
-    ARTIFACTORY_API_KEY=$(curl -s -u"${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}" -XPOST "${ARTIFACTORY_URL}api/security/apiKey" | jq -r .apiKey)
-  fi
-
   # # create a new admin user for UI use
   # password=$(openssl rand -base64 8)
   # payload=$(jq -n --arg pw "$password" '{userName: "dev", email: "dev@dev.net", password: $pw, admin: true}')
@@ -59,4 +54,3 @@ echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
 echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
 echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;
-echo export ARTIFACTORY_API_KEY=\"$ARTIFACTORY_API_KEY\"\;

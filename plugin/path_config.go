@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,10 +32,6 @@ var configSchema = map[string]*framework.FieldSchema{
 	"bearer_token": {
 		Type:        framework.TypeString,
 		Description: `Artifactory token that has permissions to generate other tokens`,
-	},
-	"api_key": {
-		Type:        framework.TypeString,
-		Description: `Artifactory API key of a user that has permissions to generate other tokens`,
 	},
 	"username": {
 		Type:        framework.TypeString,
@@ -85,16 +81,11 @@ func (backend *ArtifactoryBackend) pathConfigWrite(ctx context.Context, req *log
 	}
 
 	if baseURL, ok := data.GetOk("base_url"); ok {
-		url := appendTrailingSlash(baseURL.(string))
-		cfg.BaseURL = url
+		cfg.BaseURL = baseURL.(string)
 	}
 
 	if bearerToken, ok := data.GetOk("bearer_token"); ok {
 		cfg.BearerToken = bearerToken.(string)
-	}
-
-	if apiKey, ok := data.GetOk("api_key"); ok {
-		cfg.ApiKey = apiKey.(string)
 	}
 
 	if username, ok := data.GetOk("username"); ok {

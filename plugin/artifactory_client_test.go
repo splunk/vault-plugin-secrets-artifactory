@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,14 +57,12 @@ func TestArtAccNewClient(t *testing.T) {
 	bearerToken := os.Getenv("ARTIFACTORY_BEARER_TOKEN")
 	username := os.Getenv("ARTIFACTORY_USER")
 	password := os.Getenv("ARTIFACTORY_PASSWORD")
-	apiKey := os.Getenv("ARTIFACTORY_API_KEY")
 
 	require := require.New(t)
 	require.NotEmpty(baseUrl)
 	require.NotEmpty(bearerToken)
 	require.NotEmpty(username)
 	require.NotEmpty(password)
-	require.NotEmpty(apiKey)
 	require.True(strings.HasSuffix(baseUrl, "/"))
 
 	tests := []struct {
@@ -84,13 +82,6 @@ func TestArtAccNewClient(t *testing.T) {
 				BaseURL:  baseUrl,
 				Username: username,
 				Password: password,
-			},
-		},
-		{
-			name: "api_key",
-			config: &ConfigStorageEntry{
-				BaseURL: baseUrl,
-				ApiKey:  apiKey,
 			},
 		},
 	}

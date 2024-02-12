@@ -1,4 +1,4 @@
-// Copyright  2021 Splunk, Inc.
+// Copyright  2024 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,10 @@ func roleID(roleName string) string {
 	return fmt.Sprintf("%x", roleID)[:roleIDHashLen]
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func tokenUsername(roleName string) string {
 	fullUsername := fmt.Sprintf("%s.%s", tokenUsernamePrefix, roleName)
 	tokenUser := fullUsername
@@ -56,13 +60,22 @@ func tokenUsername(roleName string) string {
 	return tokenUser
 }
 
-// appendTrailingSlash appends trailing slash if url doesn't end with slash.
-// artifactory client assumes URL ends with '/'
-func appendTrailingSlash(url string) string {
-	if !strings.HasSuffix(url, "/") {
-		return fmt.Sprintf("%s/", url)
-	}
-	return url
+func trimEndpoints(url string) string {
+	s := strings.TrimRight(url, "/")
+	s = strings.TrimSuffix(s, "/access")
+	s = strings.TrimSuffix(s, "/artifactory")
+
+	return s
+}
+
+func ensureAccessURL(url string) string {
+	s := trimEndpoints(url)
+	return fmt.Sprintf("%s/access/", s)
+}
+
+func ensureArtifactoryURL(url string) string {
+	s := trimEndpoints(url)
+	return fmt.Sprintf("%s/artifactory/", s)
 }
 
 func convertPermissionTarget(fromPt *PermissionTarget, toPt *services.PermissionTargetParams, groupName, ptName string) {

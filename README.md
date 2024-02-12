@@ -24,8 +24,8 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 
 ## Requirements
 
-- Go: 1.17 or above
-- **Artifactory: 6.6.0** or above for API V2 support.
+- Go: 1.22 or above
+- **Artifactory: 7.21.1** or above (for Access API support)
 - **Artifactory Pro or above is required** for the [API endpoints][artifactory-api-ref] used by
   this plugin. A license key will be needed to spin up the full dev environment.
 - token with admin privileges to manage groups and permission targets and to create tokens
@@ -48,6 +48,7 @@ $ vault secrets enable -path=artifactory vault-artifactory-secrets-plugin
 Success! Enabled the vault-artifactory-secrets-plugin secrets engine at: artifactory/
 
 # configure the /config backend. You must supply admin bearer token or username/password pair of an admin user.
+# URL can have /artifactory/ but this will be stripped for the Access API (`/access/`).
 $ vault write artifactory/config base_url="https://artifactory.example.com/artifactory" bearer_token=$BEARER_TOKEN ttl=600 max_ttl=600
 
 # see supported paths
@@ -65,18 +66,24 @@ access_token    REDACTED
 username        auto-vault-plugin-user.ci-role
 ```
 
+
+**Note:** If username/password is used, [Enable Token Generation via
+API](https://jfrog.com/help/r/jfrog-platform-administration-documentation/enable-token-generation-via-api)
+is required to be set in the Artifactory instance.
+
 ## Documents
 
 when a role is created, it generates an artifactory group and supplied permission targets. To
 achieve unique group and permission target names per role, it applies a UUID to each
 role as `role_id` and appends it to the group and permission target names:
 
-| Artifactory Object | format                                                                | example                                             |
-| ------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
-| Group              | `vault-plugin.<role_id>`                                              | `vault-plugin.9ace47f6-a205-11eb-8b68-acde48001122` |
-| Permission Target  | `vault-plugin.pt<index of permission target counts>.<role_name>` | `npm-test.pt0.ci-role`     |
+| Artifactory Object | format                                                           | example                                             |
+| ------------------ | ---------------------------------------------------------------- | --------------------------------------------------- |
+| Group              | `vault-plugin.<role_id>`                                         | `vault-plugin.9ace47f6-a205-11eb-8b68-acde48001122` |
+| Permission Target  | `vault-plugin.pt<index of permission target counts>.<role_name>` | `npm-test.pt0.ci-role`                              |
 
-Group name uses UUID as it's bounded to max 64 chars DB limit, whereas permission target name can be longer than that  
+Group name uses UUID as it's bounded to max 64 chars DB limit, whereas permission target name can be
+longer than that.
 
 Token is generated with a transient user and returned as key value pair:
 
@@ -90,7 +97,9 @@ username follows the format of `auto-vault-plugin-user.<role_name>`
 
 ### Update Permission Targets
 
-List of permission targets can be supplied as a JSON string. Format of a permission target can be found below. This is derived from artifactory V2 security permission target json that you can find [here][permission-target-format].
+List of permission targets can be supplied as a JSON string. Format of a permission target can be
+found below. This is derived from artifactory V2 security permission target json that you can find
+[here][permission-target-format].
 
 ```json
 [
@@ -209,7 +218,7 @@ open coverage.html
 
 [actions-page]:https://github.com/splunk/vault-plugin-secrets-artifactory/actions
 [artifactory-api-ref]:https://www.jfrog.com/confluence/display/JFROG/Artifactory+REST+API
-[build-status-badge]:https://github.com/splunk/vault-plugin-secrets-artifactory/workflows/test.yml/badge.svg
+[build-status-badge]:https://github.com/splunk/vault-plugin-secrets-artifactory/actions/workflows/test.yml/badge.svg
 [codecov]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory
 [codecov-badge]:https://codecov.io/gh/splunk/vault-plugin-secrets-artifactory/branch/main/graph/badge.svg
 [design-doc]:https://docs.google.com/document/d/1lfWFeutKLKrS39qFHDMmTZba5-6j628irv8HNLpASfc/edit#
