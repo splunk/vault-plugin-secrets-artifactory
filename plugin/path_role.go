@@ -45,6 +45,10 @@ var createRoleSchema = map[string]*framework.FieldSchema{
 		Type:        framework.TypeString,
 		Description: "List of permission target configurations",
 	},
+	"groups": {
+		Type:        framework.TypeCommaStringSlice,
+		Description: "Optional comma-separated list of static, pre-existing groups to associate with the role",
+	},
 }
 
 // remove the specified role from the storage
@@ -104,6 +108,7 @@ func (backend *ArtifactoryBackend) pathRoleRead(ctx context.Context, req *logica
 			"token_ttl":          int64(role.TokenTTL / time.Second),
 			"max_ttl":            int64(role.MaxTTL / time.Second),
 			"permission_targets": role.RawPermissionTargets,
+			"groups":             role.Groups,
 		},
 	}, nil
 }
@@ -124,6 +129,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 			"role_id":            role.RoleID,
 			"role_name":          role.Name,
 			"permission_targets": role.RawPermissionTargets,
+			"groups":             role.Groups,
 		}
 	}
 
@@ -156,7 +162,18 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		role.RoleID = roleID(roleName)
 	}
 
-	isCreate := req.Operation == logical.CreateOperation
+	// Groups
+	var groups []string
+	groupsRaw, newGroups := data.GetOk("groups")
+	if newGroups {
+		var ok bool
+		groups, ok = groupsRaw.([]string)
+		if !ok {
+			return logical.ErrorResponse("groups is not a string slice"), nil
+		}
+
+		role.Groups = groups
+	}
 
 	// Permission Targets
 	ptsRaw, newPermissionTargets := data.GetOk("permission_targets")
@@ -165,13 +182,13 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 		if !ok {
 			return logical.ErrorResponse("permission targets are not a string"), nil
 		}
-		if pts == "" {
-			return logical.ErrorResponse("permission targets are empty"), nil
+		if pts == "" && !newGroups {
+			return logical.ErrorResponse("permission targets and groups are empty"), nil
 		}
 	}
 
-	if isCreate && !newPermissionTargets {
-		return logical.ErrorResponse("permission targets are required for new role"), nil
+	if !newPermissionTargets && !newGroups {
+		return logical.ErrorResponse("permission targets and/or groups are required to create or update a role"), nil
 	}
 
 	maxttlRaw, ok := data.GetOk("max_ttl")
@@ -194,6 +211,7 @@ func (backend *ArtifactoryBackend) pathRoleCreateUpdate(ctx context.Context, req
 	if role.TokenTTL > role.MaxTTL {
 		return logical.ErrorResponse(fmt.Sprintf("role token ttl is greater than role max ttl '%d'", role.MaxTTL)), nil
 	}
+
 	// If no new permission targets or new permission targets are exactly same as old permission targets,
 	// just return without updating permission targets
 	if !newPermissionTargets || role.permissionTargetsHash() == getStringHash(ptsRaw.(string)) {
@@ -278,11 +296,15 @@ func pathRoleList(backend *ArtifactoryBackend) []*framework.Path {
 	return paths
 }
 
-const pathRoleHelpSyn = `Read/write sets of permission targets to be given to generated credentials for specified role.`
+const pathRoleHelpSyn = `Read/write sets of permission targets and/or groups to generate an Artifactory access token for the specified role.`
 const pathRoleHelpDesc = `
-This path allows you to create roles, which bind sets of permission targets
-of specific repositories with patterns and operations to a group. Secrets are 
-generated under a role and will have the given set of permission targets on group.
+This path allows you to create roles, which bind sets of permission targets of
+specific repositories with patterns and operations to a group. In addition,
+optional pre-existing groups can be bound to the role.
+
+Access tokens are generated under a role and will be scoped to the generated
+group associated with the permission targets, as well as the optional
+additional pre-existing groups.
 
 The specified permission targets file accepts an JSON string
 with the following format:
@@ -304,7 +326,7 @@ with the following format:
   }
 ]
 
-At least one of repo or build is required
+At least one of repo or build is required (if no pre-existing groups specified)
 
 | field | subfield         | required |
 | ----- | ---------------- | -------- |

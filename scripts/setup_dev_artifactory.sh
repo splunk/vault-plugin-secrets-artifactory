@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+: "${ARTIFACTORY_LICENSE_KEY:?license key is required}"
+
 ARTIFACTORY_URL="http://localhost:8081/artifactory/"
 ACCESS_URL="http://localhost:8082/access/"
 ARTIFACTORY_USER="admin"
@@ -35,6 +37,12 @@ setup_artifactory() {
     echo
   done
 
+  # create some static groups to test with
+  for group in "group1" "group2" "group3"; do
+    payload=$(jq -n --arg name "$group" '{"name": $name, "description": "\( $name ) group", "auto_join": false}')
+    curl -sS -XPOST -H "$auth_header" -H "$content_header" "${ACCESS_URL}api/v2/groups" -d "$payload" || true
+  done
+
   # # create a new admin user for UI use
   # password=$(openssl rand -base64 8)
   # payload=$(jq -n --arg pw "$password" '{userName: "dev", email: "dev@dev.net", password: $pw, admin: true}')
@@ -53,4 +61,5 @@ setup_artifactory >&2
 echo export ARTIFACTORY_USER=\"$ARTIFACTORY_USER\"\;
 echo export ARTIFACTORY_PASSWORD=\"$ARTIFACTORY_PASSWORD\"\;
 echo export ARTIFACTORY_URL=\"$ARTIFACTORY_URL\"\;
+echo export ACCESS_URL=\"$ACCESS_URL\"\;
 echo export ARTIFACTORY_BEARER_TOKEN=\"$ARTIFACTORY_BEARER_TOKEN\"\;

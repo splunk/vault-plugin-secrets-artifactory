@@ -40,6 +40,9 @@ vault-only: build
 dev: tools build-linux
 	@./scripts/init_dev.sh
 
+reload: tools build-linux
+	@./scripts/setup_dev_vault.sh
+
 clean-dev:
 	@cd scripts && docker compose down -v
 
@@ -72,4 +75,4 @@ tools: .tools .tools/gocover-cobertura .tools/gocovmerge .tools/golangci-lint .t
 	curl -so .tools/vault.zip -sSL https://releases.hashicorp.com/vault/$(VAULT_VERSION)/vault_$(VAULT_VERSION)_$(VAULT_PLATFORM)_amd64.zip
 	(cd .tools && unzip -o vault.zip && rm vault.zip)
 
-.PHONY: all get build build-linux publish lint test test-artacc test-vaultacc report vault-only dev clean-dev clean-all tools
+.PHONY: all get build build-linux publish lint test test-artacc test-vaultacc report vault-only dev reload clean-dev clean-all tools

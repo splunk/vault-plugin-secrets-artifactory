@@ -30,7 +30,6 @@ const (
 )
 
 type RoleStorageEntry struct {
-	// `json:"" structs:"" mapstructure:""`
 	// The UUID that defines this role
 	RoleID string `json:"role_id" structs:"role_id" mapstructure:"role_id"`
 
@@ -42,6 +41,13 @@ type RoleStorageEntry struct {
 
 	// The provided name for the role
 	Name string `json:"name" structs:"name" mapstructure:"name"`
+
+	// Groups are optional pre-existing static Artifactory groups to associate
+	// with the role and attach to the generated token scope.
+	//
+	// These groups are separate from the generated group that is created to
+	// accompany any configured permission targets.
+	Groups []string `json:"groups,omitempty" structs:"groups" mapstructure:"groups,omitempty"`
 
 	RawPermissionTargets string
 	PermissionTargets    []PermissionTarget
@@ -56,11 +62,13 @@ func (role RoleStorageEntry) validate() error {
 	if role.RoleID == "" {
 		err = multierror.Append(err, errors.New("role id is empty"))
 	}
-	if role.RawPermissionTargets == "" {
-		err = multierror.Append(err, errors.New("raw permission targets are empty"))
-	}
-	if role.PermissionTargets == nil {
-		err = multierror.Append(err, errors.New("permission targets are empty"))
+	if len(role.Groups) == 0 {
+		if role.RawPermissionTargets == "" {
+			err = multierror.Append(err, errors.New("raw permission targets are empty"))
+		}
+		if role.PermissionTargets == nil {
+			err = multierror.Append(err, errors.New("permission targets are empty and groups are empty"))
+		}
 	}
 	return err.ErrorOrNil()
 }
