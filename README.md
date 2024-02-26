@@ -1,4 +1,3 @@
-<!-- omit in toc -->
 # vault-plugin-secrets-artifactory
 
 [![build-status-badge]][actions-page]
@@ -10,6 +9,7 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 
 [Design doc][design-doc]
 
+- [Differences between JFrog's Vault Plugin](#differences-between-jfrogs-vault-plugin)
 - [Requirements](#requirements)
 - [Getting Started](#getting-started)
   - [Usage](#usage)
@@ -19,8 +19,17 @@ This is a backend plugin to be used with Vault. This plugin generates one-time a
 - [Development](#development)
   - [Full dev environment](#full-dev-environment)
   - [Developing with an existing Artifactory instance](#developing-with-an-existing-artifactory-instance)
+  - [Reloading plugin](#reloading-plugin)
   - [Tests](#tests)
 - [License](#license)
+
+## Differences between JFrog's Vault Plugin
+
+JFrog has their [own vault plugin](https://github.com/jfrog/vault-plugin-secrets-artifactory/).  The
+main difference between that plugin and this one is the dynamic group/permission target generation.
+
+This plugin generates permission targets and a group to link the token with the desired permissions,
+in addition to being able to specify a pre-existing group.
 
 ## Requirements
 
@@ -55,8 +64,14 @@ $ vault write artifactory/config base_url="https://artifactory.example.com/artif
 $ vault path-help artifactory/
 $ vault path-help artifactory/config
 
-# create a role
+# create a role with permissions targets
 $ vault write artifactory/roles/ci-role token_ttl=600 permission_targets=@scripts/sample_permission_targets.json
+
+# create a role with permission targets and additional pre-existing static groups
+$ vault write artifactory/roles/ci-role token_ttl=600 permission_targets=@scripts/sample_permission_targets.json groups=group1,group2,group3
+
+# create a role with pre-existing static groups only
+$ vault write artifactory/roles/ci-role token_ttl=600 groups=group1,group2,group3
 
 # generate an ephemeral artifactory token
 $ vault write artifactory/token/ci-role ttl=60
@@ -191,6 +206,16 @@ export ARTIFACTORY_BEARER_TOKEN=TOKEN
 ```
 
 You can then create a role and issue a token following above usage.
+
+### Reloading plugin
+
+To quickly test changes to the plugin (using the docker environment), run:
+
+```
+make reload
+```
+
+This will re-compile, re-register, and reload the plugin.
 
 ### Tests
 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/jfrog/jfrog-client-go/access"
@@ -185,9 +186,15 @@ func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
 func (ac *artifactoryClient) CreateToken(tokenReq TokenCreateEntry, role *RoleStorageEntry) (auth.CreateTokenResponseData, error) {
 	expiresIn := uint(tokenReq.TTL.Seconds())
 
+	var groups []string
+	if len(role.PermissionTargets) > 0 {
+		groups = append(groups, groupName(role))
+	}
+	groups = append(groups, role.Groups...)
+
 	params := accessservices.CreateTokenParams{
 		CommonTokenParams: auth.CommonTokenParams{
-			Scope:     fmt.Sprintf("applied-permissions/groups:%s", groupName(role)),
+			Scope:     fmt.Sprintf("applied-permissions/groups:%s", strings.Join(groups, ",")),
 			ExpiresIn: &expiresIn,
 			TokenType: "access_token",
 			Audience:  "*@*",

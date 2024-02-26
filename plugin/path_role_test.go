@@ -367,7 +367,7 @@ func TestArtAccPermissionTargets(t *testing.T) {
 	})
 }
 
-func TestPathRoleFail(t *testing.T) {
+func TestPathRole(t *testing.T) {
 	t.Parallel()
 	req, backend := newArtMockEnv(t)
 	conf := map[string]interface{}{
@@ -448,11 +448,11 @@ func TestPathRoleFail(t *testing.T) {
 		require.True(t, resp.IsError(), "expecting error")
 
 		actualErr := resp.Data["error"].(string)
-		expected := "permission targets are required for new role"
+		expected := "permission targets and/or groups are required to create or update a role"
 		assert.Contains(t, actualErr, expected)
 	})
 
-	t.Run("empty_permission_targets", func(t *testing.T) {
+	t.Run("empty permission targets and groups", func(t *testing.T) {
 		data := make(map[string]interface{})
 		roleName := "test_role1"
 		data["permission_targets"] = ""
@@ -461,7 +461,7 @@ func TestPathRoleFail(t *testing.T) {
 		require.True(t, resp.IsError(), "expecting error")
 
 		actualErr := resp.Data["error"].(string)
-		expected := "permission targets are empty"
+		expected := "permission targets and groups are empty"
 		assert.Contains(t, actualErr, expected)
 	})
 
@@ -527,6 +527,21 @@ func TestPathRoleFail(t *testing.T) {
 		actualErr := resp.Data["error"].(string)
 		expected := "operation 'invalidop' is not allowed"
 		assert.Contains(t, actualErr, expected)
+	})
+
+	t.Run("static group only role succeeds", func(t *testing.T) {
+		data := make(map[string]interface{})
+		roleName := "test_role1"
+		data["groups"] = []string{"testgroup1", "testgroup2"}
+		data["name"] = roleName
+		resp, err := testRoleCreate(req, backend, t, roleName, data)
+		require.NoError(t, err)
+		require.False(t, resp.IsError(), "expecting no response error")
+
+		rawGroups := resp.Data["groups"]
+		groups := rawGroups.([]string)
+
+		assert.Len(t, groups, 2)
 	})
 }
 
