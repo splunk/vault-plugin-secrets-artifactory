@@ -138,7 +138,7 @@ func (ac *artifactoryClient) CreateOrReplaceGroup(role *RoleStorageEntry) error 
 
 	group, err := ac.client.GetGroup(params)
 	if err != nil {
-		return fmt.Errorf("Error fetching a group '%s' - %s", groupName(role), err)
+		return fmt.Errorf("error fetching a group '%s' - %s", groupName(role), err)
 	}
 	if group != nil {
 		params.ReplaceIfExists = true
