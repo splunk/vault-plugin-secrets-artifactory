@@ -1,9 +1,0 @@
-version: "2"
-
-linters:
-  exclusions:
-    rules:
-      - path: plugin/(artifactory_client|role)\.go
-        text: "error strings should not be capitalized"
-        linters:
-          - staticcheck

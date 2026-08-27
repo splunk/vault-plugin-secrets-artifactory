@@ -129,7 +129,7 @@ func (backend *ArtifactoryBackend) saveRoleWithNewPermissionTargets(ctx context.
 		ptName := permissionTargetName(role.Name, idx)
 		backend.Logger().Debug("creating/updating a permission target", "name", ptName)
 		if err := ac.CreateOrUpdatePermissionTarget(role, &pt, ptName); err != nil {
-			return nil, fmt.Errorf("Failed to create/update a permission target - %s", err.Error())
+			return nil, fmt.Errorf("failed to create/update a permission target - %s", err.Error())
 		}
 	}
 
