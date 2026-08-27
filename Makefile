@@ -61,7 +61,7 @@ tools: .tools .tools/gocover-cobertura .tools/gocovmerge .tools/golangci-lint .t
 	export GOBIN=$(shell pwd)/.tools; go install github.com/wadey/gocovmerge@master
 
 .tools/golangci-lint:
-	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.0
+	export GOBIN=$(shell pwd)/.tools; go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
 .tools/jq: JQ_VERSION = 1.6
 .tools/jq: JQ_PLATFORM = $(patsubst darwin,osx-amd,$(shell uname -s | tr A-Z a-z))
