@@ -33,7 +33,7 @@ in addition to being able to specify a pre-existing group.
 
 ## Requirements
 
-- Go: 1.22 or above
+- Go: 1.25 or above
 - **Artifactory: 7.21.1** or above (for Access API support)
 - **Artifactory Pro or above is required** for the [API endpoints][artifactory-api-ref] used by
   this plugin. A license key will be needed to spin up the full dev environment.
