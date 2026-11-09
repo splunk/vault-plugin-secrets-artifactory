@@ -16,6 +16,8 @@ package artifactorysecrets
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -135,6 +137,34 @@ func TestValid(t *testing.T) {
 			test.asserter(t, test.client.Valid())
 		})
 	}
+}
+
+func TestCreateOrUpdatePermissionTargetConflictBody(t *testing.T) {
+	t.Parallel()
+
+	const conflictBody = `{"errors":[{"status":409,"message":"some artifactory conflict detail"}]}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || !strings.HasSuffix(r.URL.Path, "/api/v2/security/permissions/pt-name") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(conflictBody))
+	}))
+	t.Cleanup(server.Close)
+
+	c, err := NewClient(&ConfigStorageEntry{BaseURL: server.URL, BearerToken: "token"})
+	require.NoError(t, err)
+
+	role := &RoleStorageEntry{Name: "role", RoleID: roleID("role")}
+	pt := &PermissionTarget{Repo: &Permission{Repositories: []string{"repo"}, Operations: []string{"read"}}}
+
+	err = c.CreateOrUpdatePermissionTarget(role, pt, "pt-name")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pt-name")
+	assert.Contains(t, err.Error(), "409")
+	assert.Contains(t, err.Error(), "some artifactory conflict detail")
 }
 
 type mockArtifactoryClient struct{}

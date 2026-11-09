@@ -16,6 +16,7 @@ package artifactorysecrets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -169,7 +170,13 @@ func (ac *artifactoryClient) CreateOrUpdatePermissionTarget(role *RoleStorageEnt
 	params := services.PermissionTargetParams{}
 	convertPermissionTarget(pt, &params, groupName(role), ptName)
 
-	return ac.client.UpdatePermissionTarget(params)
+	err := ac.client.UpdatePermissionTarget(params)
+	// jfrog-client-go maps any HTTP 409 to a fixed "already exists" message and drops the response body.
+	var conflictErr *services.PermissionTargetAlreadyExistsError
+	if errors.As(err, &conflictErr) && conflictErr.InnerError != nil {
+		return fmt.Errorf("conflict updating permission target '%s' - %w", ptName, conflictErr.InnerError)
+	}
+	return err
 }
 
 func (ac *artifactoryClient) DeletePermissionTarget(ptName string) error {
